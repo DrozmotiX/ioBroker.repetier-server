@@ -1,145 +1,62 @@
 /**
  * Created by issi on 31.10.21
  */
-import { Visibility, VisibilityOff } from '@mui/icons-material';
-import {
-	FormControl,
-	Grid,
-	IconButton,
-	InputAdornment,
-	InputLabel,
-	OutlinedInput,
-	TextField,
-	Tooltip,
-} from '@mui/material';
-import { useI18n, useIoBrokerObject } from 'iobroker-react/hooks';
-import { decrypt, encrypt } from 'iobroker-react/lib/shared/tools';
+import { FormControl, Grid, InputLabel, MenuItem, OutlinedInput, Select, SelectChangeEvent } from '@mui/material';
+import { useI18n } from 'iobroker-react/hooks';
 import React, { useEffect, useState } from 'react';
-import { NumberInput } from './NumberInput';
 
 export interface Row {
-	ip: string;
-	port: number;
-	password: string;
-	name: string;
+	select: string;
 }
 
 export interface RowProps {
-	addRow: (value: Row) => void;
+	newRow?: (value: Row) => void;
+	oldRow?: Row;
+	mode: 'add' | 'edit';
 }
 
-interface valuesProps {
-	ip: string | any[];
-	password: string;
-	showPassword: boolean;
-}
-
-const allowedInputRegex = /^\d*\.?\d*\.?\d*\.?\d*$/;
-const ipRegex = /^(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)(?:\.(?!$)|$)){4}$/; //regex from https://regex101.com/library/ChFXjy
-
-export const AddTableDialog: React.FC<RowProps> = ({ addRow }): JSX.Element => {
+export const AddTableDialog: React.FC<RowProps> = ({ mode, newRow, oldRow }): JSX.Element => {
 	const { translate: _ } = useI18n();
-	const [valide, setValide] = useState<boolean>(true);
-	const [values, setValues] = useState<valuesProps>({
-		ip: '',
-		password: '',
-		showPassword: false,
+	const [row, setRow] = useState({
+		select: '0',
 	});
-
-	const [systemConfigObj] = useIoBrokerObject('system.config');
-	const secret = systemConfigObj?.native?.secret || 'Zgfr56gFe87jJOM';
-
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	const [numberValue, setNumberValue] = useState<number>(80);
-	const [name, setName] = useState<string>('');
-	const [error, setError] = useState<boolean>(true);
-	const [newRow, setNewRow] = useState({
-		name: '',
-		ip: '',
-		port: 80,
-		password: '',
-	});
+	const [select, setSelect] = useState<string>('');
 
 	useEffect(() => {
-		addRow(newRow);
-	}, [newRow]);
-
-	/**
-	 * Password
-	 */
-	const handleChangePW =
-		(attr: string) =>
-		(event: { target: { value: any } }): void => {
-			setValues({ ...values, [attr]: encrypt(secret, event.target.value) });
-			setNewRow({ ...newRow, [attr]: encrypt(secret, event.target.value) });
-		};
-
-	const handleClickShowPassword = (): void => {
-		setValues({ ...values, showPassword: !values.showPassword });
-	};
-
-	const handeleNumber = (attr: string, value: React.SetStateAction<number>): void => {
-		//		setNumberValue(value);
-		if (typeof value === 'number') {
-			setNewRow({ ...newRow, [attr]: value });
+		if (newRow) {
+			newRow(row);
 		}
-	};
+	}, [row]);
 
-	const handleIpAddress = (
-		event: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>,
-		newValue: string | any[],
-	): void => {
-		const length = newValue.length;
-		const index = newValue.lastIndexOf('.') + 1;
-		let noOfDots = 0;
-		if (typeof newValue === 'string') {
-			noOfDots = newValue.split('.').length - 1;
+	useEffect(() => {
+		if (oldRow) {
+			setSelect(oldRow.select);
 		}
-		let updatedVal: string | any[] = '';
-		if (length !== index && noOfDots < 3 && values.ip.length < length && (length - index) % 3 == 0) {
-			updatedVal = newValue + '.';
-		} else if (noOfDots > 3 || length - index > 3) {
-			if (typeof newValue === 'string') {
-				updatedVal = newValue.substring(0, length - 1);
-			}
+	}, [oldRow]);
+
+	const handleChangeSelect = (event: SelectChangeEvent<typeof select>): void => {
+		if (mode === 'edit') {
+			setRow({ ...oldRow, select: event.target.value as string });
+			setSelect(event.target.value as string);
 		} else {
-			updatedVal = newValue;
-		}
-		setValues({ ...values, ip: updatedVal });
-
-		if (updatedVal !== undefined || updatedVal !== '') {
-			if (typeof updatedVal !== 'string' || updatedVal?.match(ipRegex)) {
-				// valid
-				if (typeof updatedVal === 'string') {
-					setNewRow({ ...newRow, ip: updatedVal });
-				}
-				setValide(false);
-			} else {
-				// invalid
-				setValide(true);
-			}
+			setRow({ ...row, select: event.target.value as string });
+			setSelect(event.target.value as string);
 		}
 	};
 
-	const handleChangeName = (event: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>): void => {
-		const newName: string = event.target.value;
-
-		if (newName !== '') {
-			setName(newName);
-			setNewRow({ ...newRow, name: newName });
-			setError(false);
-		} else {
-			setName('');
-			setNewRow({ ...newRow, name: '' });
-			setError(true);
+	// function that returns random select options
+	const getSelectOptions = () => {
+		const options = {};
+		for (let i = 0; i < 10; i++) {
+			options[i] = `Option ${i}`;
 		}
+		return options;
 	};
 
 	return (
 		<React.Fragment>
 			<Grid
 				container
-				spacing={3}
 				sx={{
 					marginTop: '10px',
 					paddingBottom: '15px',
@@ -150,96 +67,27 @@ export const AddTableDialog: React.FC<RowProps> = ({ addRow }): JSX.Element => {
 					flexDirection: 'row',
 				}}
 			>
-				<Tooltip title={_('tooltipTabletName')} arrow>
-					<TextField
-						required
-						error={error}
-						label={_('Name')}
-						color="success"
-						value={name}
-						type={'text'}
-						placeholder="my Name"
-						inputProps={{
-							maxLength: 20,
-						}}
+				<FormControl sx={{ m: 1, minWidth: 150 }}>
+					<InputLabel id="demo-dialog-select-label">Age</InputLabel>
+					<Select
+						labelId="demo-dialog-select-label"
+						id="demo-dialog-select"
+						value={select}
 						onChange={(event) => {
-							handleChangeName(event);
+							handleChangeSelect(event);
 						}}
-					/>
-				</Tooltip>
-			</Grid>
-			<Grid
-				container
-				spacing={3}
-				sx={{
-					marginTop: '0',
-					paddingBottom: '15px',
-					alignItems: 'center',
-					justifyContent: 'space-around',
-					display: 'flex',
-					flexWrap: 'nowrap',
-					flexDirection: 'row',
-				}}
-			>
-				<React.Fragment>
-					<FormControl variant="outlined">
-						<Tooltip title={_('tooltipIp')} arrow>
-							<TextField
-								required
-								variant="outlined"
-								error={valide}
-								color="success"
-								label={_('ipAddress')}
-								value={values.ip}
-								type="text"
-								placeholder="192.0.0.1"
-								sx={{ width: '23ch', margin: 1 }}
-								inputProps={{
-									maxLength: 15,
-								}}
-								onChange={(e) => {
-									const newValue = e.target.value;
-
-									if (allowedInputRegex.test(newValue)) {
-										handleIpAddress(e, newValue);
-									}
-								}}
-							/>
-						</Tooltip>
-					</FormControl>
-					<NumberInput
-						min={0}
-						max={99999}
-						label={'port'}
-						tooltip={'tooltipPort'}
-						sx={{ width: '12ch', margin: 1, textAlignLast: 'center' }}
-						value={newRow.port}
-						createNewConfig={(value) => handeleNumber('port', value)}
-					/>
-					<FormControl sx={{ m: 1, width: '20ch' }} variant="outlined">
-						<InputLabel htmlFor="outlined-adornment-password">{_('Password')}</InputLabel>
-						<Tooltip title={_('tooltipPassword')} arrow>
-							<OutlinedInput
-								id="outlined-adornment-password"
-								type={values.showPassword ? 'text' : 'password'}
-								value={decrypt(secret, values.password)}
-								onChange={handleChangePW('password')}
-								endAdornment={
-									<InputAdornment position="end">
-										<IconButton
-											aria-label="toggle password visibility"
-											onClick={handleClickShowPassword}
-											edge="end"
-										>
-											{values.showPassword ? <VisibilityOff /> : <Visibility />}
-										</IconButton>
-									</InputAdornment>
-								}
-								label="Password"
-							/>
-						</Tooltip>
-					</FormControl>
-				</React.Fragment>
+						input={<OutlinedInput label="Age" />}
+					>
+						<MenuItem disabled value="">
+							<em>None</em>
+						</MenuItem>
+						{Object.keys(getSelectOptions()).map((key) => (
+							<MenuItem key={key} value={key}>
+								{getSelectOptions()[key]}
+							</MenuItem>
+						))}
+					</Select>
+				</FormControl>
 			</Grid>
 		</React.Fragment>
 	);

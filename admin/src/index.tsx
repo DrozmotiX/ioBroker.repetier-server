@@ -6,10 +6,10 @@ import { ThemeProvider } from '@mui/material/styles';
 import { SettingsApp } from 'iobroker-react/app';
 import { useSettings } from 'iobroker-react/hooks';
 import type { Translations } from 'iobroker-react/i18n';
-import React from 'react';
+import React, { useState } from 'react';
 import ReactDOM from 'react-dom';
 import { SettingPage } from './SettingPage';
-import { Logo } from "iobroker-react";
+import { Logo } from 'iobroker-react';
 // Components are imported here
 
 const themeName = Utils.getThemeName();
@@ -29,11 +29,17 @@ const SettingsPageContent: React.FC = React.memo(() => {
 			[option]: value,
 		}));
 	};
+	const [ip, setIp] = useState<string>('');
 
 	return (
 		<React.Fragment>
-			<Logo />
-			<SettingPage settings={settings} changeSetting={(option, value) => handleChange(option, value)} />
+			<Logo
+				classes={{
+					logo: 'logo',
+				}}
+			/>
+
+			<SettingPage settings={settings} onChange={(option, value) => handleChange(option, value)} />
 		</React.Fragment>
 	);
 });
@@ -57,13 +63,14 @@ const translations: Translations = {
 	it: require('./i18n/it.json'),
 	es: require('./i18n/es.json'),
 	pl: require('./i18n/pl.json'),
+	uk: require('./i18n/uk.json'),
 	'zh-cn': require('./i18n/zh-cn.json'),
 };
 
 const Root: React.FC = () => {
 	return (
 		<ThemeProvider theme={theme(themeName)}>
-			<SettingsApp name="my-adapter" afterLoad={migrateSettings} translations={translations}>
+			<SettingsApp name="repetier-server" afterLoad={migrateSettings} translations={translations}>
 				<SettingsPageContent />
 			</SettingsApp>
 		</ThemeProvider>
