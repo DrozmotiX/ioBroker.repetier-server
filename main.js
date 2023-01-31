@@ -75,6 +75,13 @@ class RepetierServer extends utils.Adapter {
 			await this.webSocketHandler();
 		} else if (wsConnection.connectionNeeded && wsConnection.connectionActive){ // If connection is active, request value updates for defined functions
 			this.requestData('getPrinterInfo');
+			this.log.info(`Send ping to server`);
+			const messageArray = {
+				'action': 'ping',
+				'data': {},
+				'callback_id': 800
+			};
+			ws.send(JSON.stringify(messageArray));
 		}
 
 		wsConnection.reconnectTimer = setTimeout(() => {
