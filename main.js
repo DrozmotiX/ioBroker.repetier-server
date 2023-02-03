@@ -308,16 +308,55 @@ class RepetierServer extends utils.Adapter {
 				});
 
 				for (const tempStates in data.data[device].data){
-					await this.extendObjectAsync(`${data.data[device].printer}.temperatures.${tempStates}`, {
-						type: 'state',
-						common : {
-							name: tempStates,
-							type: typeof data.data[device].data[tempStates],
-							role: 'value',
-							write: false
-						}
+					await this.extendObjectAsync(`${data.data[device].printer}.temperatures.extruder`, {
+						type: 'channel',
+						common: {
+							name: data.data[device].printer
+						},
 					});
-					this.setState(`${data.data[device].printer}.temperatures.${tempStates}`, {val: data.data[device].data[tempStates], ack: true });
+
+					if (data.data[device].data.id < 1000) {
+
+						await this.extendObjectAsync(`${data.data[device].printer}.temperatures.extruder.${data.data[device].data.id}`, {
+							type: 'channel',
+							common: {
+								name: `Extruder channel ${data.data[device].data.id}`
+							},
+						});
+
+						await this.extendObjectAsync(`${data.data[device].printer}.temperatures.extruder.${data.data[device].data.id}.${tempStates}`, {
+							type: 'state',
+							common: {
+								name: tempStates,
+								type: typeof data.data[device].data[tempStates],
+								role: 'value',
+							}
+						});
+						this.setState(`${data.data[device].printer}.temperatures.extruder.${data.data[device].data.id}.${tempStates}`, {val: data.data[device].data[tempStates], ack: true });
+					} else {
+
+						// Use recognisable channel ID for bed
+
+						const channelNR = 1000 - data.data[device].data.id;
+
+						await this.extendObjectAsync(`${data.data[device].printer}.temperatures.bed.${channelNR}`, {
+							type: 'channel',
+							common: {
+								name: `Extruder channel ${channelNR}`
+							},
+						});
+
+						await this.extendObjectAsync(`${data.data[device].printer}.temperatures.bed.${channelNR}.${tempStates}`, {
+							type: 'state',
+							common: {
+								name: tempStates,
+								type: typeof data.data[device].data[tempStates],
+								role: 'value',
+							}
+						});
+						this.setState(`${data.data[device].printer}.temperatures.bed.${channelNR}.${tempStates}`, {val: data.data[device].data[tempStates], ack: true });
+					}
+
 				}
 
 
