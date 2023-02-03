@@ -28,6 +28,7 @@ class RepetierServer extends utils.Adapter {
 		});
 		this.on('ready', this.onReady.bind(this));
 		this.on('stateChange', this.onStateChange.bind(this));
+		this.on('message', this.onMessage.bind(this));
 		this.on('unload', this.onUnload.bind(this));
 	}
 
@@ -376,17 +377,18 @@ class RepetierServer extends utils.Adapter {
 		if (obj) {
 			switch (obj.command) {
 				case 'getPrinterList':
-	// onMessage(obj) {
+					if (obj.callback) {
 
 						const printers = ['All','Ender_1', 'Ender_2'];
 
 						this.sendTo(obj.from, obj.command, printers, obj.callback);
+					}
+					break;
 
-	// 			// Send response in callback if required
-	// 			if (obj.callback) this.sendTo(obj.from, obj.command, 'Message received', obj.callback);
-	// 		}
-	// 	}
-	// }
+			}
+		}
+	}
+
 }
 
 if (require.main !== module) {
