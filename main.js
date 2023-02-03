@@ -8,7 +8,6 @@
 // you need to create an adapter
 const utils = require('@iobroker/adapter-core');
 const WebSocket = require('ws'); // Lib to handle Websocket
-let allMessagesToLOG = false;
 let ws;
 const wsConnection = {
 	connectionActive : false,
@@ -29,8 +28,7 @@ class RepetierServer extends utils.Adapter {
 		});
 		this.on('ready', this.onReady.bind(this));
 		this.on('stateChange', this.onStateChange.bind(this));
-		// this.on('objectChange', this.onObjectChange.bind(this));
-		// this.on('message', this.onMessage.bind(this));
+		this.on('message', this.onMessage.bind(this));
 		this.on('unload', this.onUnload.bind(this));
 	}
 
@@ -38,58 +36,65 @@ class RepetierServer extends utils.Adapter {
 	 * Is called when databases are connected and adapter received configuration.
 	 */
 	async onReady() {
-		// Initialize your adapter here
 
 		// Reset the connection indicator during startup
 		this.setState('info.connection', false, true);
-
-		await this.extendObjectAsync('allMessageToLog', {
+		await this.extendObjectAsync(`sendMessage`, {
 			type: 'state',
 			common : {
-				name: 'Define LogLevel for debugging',
-				type: 'boolean',
-				role: 'switch',
-				def: false,
+				name: 'sendMessage',
+				type: 'string',
+				role: 'value',
 				write: true,
 			}
 		});
 
-
-		this.subscribeStates('allMessageToLog');
-
-		const resultLogMessage = await this.getStateAsync('allMessageToLog');
-		if (resultLogMessage && resultLogMessage.val != null && typeof resultLogMessage.val == 'boolean') allMessagesToLOG = resultLogMessage.val;
-
-		await this.watchDog();
+		//ToDo: Consider to have this as option for advance modus
+		// Create and listen to state to send messags
+		this.subscribeStates(`sendMessage`);
+		// Start connection handler
+		await this.connectionHandler();
 		this.setState('info.connection', true, true);
 	}
 
-	async watchDog(){
-		// Reset timer (if running) and start 10s delay to r un watchdog
-		if (wsConnection && wsConnection.reconnectTimer ) {
-			clearTimeout(wsConnection.reconnectTimer );
-		}
+	/**
+	 * `Connect websocket, keep connection alive and update values not included in regular websocket feed`
+	 */
+	async connectionHandler(){
+		// Reset timer (if running)
+		if (wsConnection && wsConnection.reconnectTimer ) clearTimeout(wsConnection.reconnectTimer );
 
+		// Start websocket connection if required but not active
 		if (wsConnection.connectionNeeded && !wsConnection.connectionActive) {
 			this.log.info('Trying to connect to websocket');
 			await this.webSocketHandler();
 		} else if (wsConnection.connectionNeeded && wsConnection.connectionActive){ // If connection is active, request value updates for defined functions
-			this.requestData('getPrinterInfo');
+
+			// Prepare ping message to keep websocket connection alive
 			this.log.debug(`Send ping to server`);
 			const messageArray = {
 				'action': 'ping',
 				'data': {},
 				'callback_id': 800
 			};
+			// Send message to websocket connection
+
 			ws.send(JSON.stringify(messageArray));
+
+			// Request state updates for values not updated by live websocket feed (like time left & % of print)
+			this.requestData('getPrinterInfo');
+
 		}
 
 		wsConnection.reconnectTimer = setTimeout(() => {
-			this.watchDog();
-		}, (5000));
+			this.connectionHandler();
+		}, (5000)); // Run connection handler every 5 seconds
 
 	}
 
+	/**
+	 * `Connect to websocket & listen to events
+	 */
 	async webSocketHandler(){
 
 		try {
@@ -114,16 +119,17 @@ class RepetierServer extends utils.Adapter {
 				}
 			});
 
-			// Handle closure of socket connection
+			// Event if connection is closed, show warning if noe expected
 			ws.on('close', () => {
 				wsConnection.connectionActive = false;
 				if (wsConnection.connectionNeeded === true)	this.log.warn(`Connection with Repetier Server closed, will try to reconnect`);
-
 			});
 
+			// Event if connection is opened
 			ws.on('open', () => {
-				this.log.info(`Connected with Repetier Server`);
 				wsConnection.connectionActive = true;
+				this.log.info(`Connected with Repetier Server`);
+				// Request Printer details
 				this.requestData(`getPrinterInfo`);
 			});
 
@@ -151,10 +157,11 @@ class RepetierServer extends utils.Adapter {
 			}
 
 			// Close web socket if connected
-			if (wsConnection.connectionNeeded && wsConnection.connectionActive){
+			if (wsConnection.connectionNeeded || wsConnection.connectionActive){
 				wsConnection.connectionNeeded = false;
+				wsConnection.connectionActive;
 				ws.close();
-				this.log.info(`Connection with Repetier Server closed`);
+				this.log.info(`Connection to Repetier Server closed`);
 			}
 
 			callback();
@@ -162,23 +169,6 @@ class RepetierServer extends utils.Adapter {
 			callback();
 		}
 	}
-
-	// If you need to react to object changes, uncomment the following block and the corresponding line in the constructor.
-	// You also need to subscribe to the objects with `this.subscribeObjects`, similar to `this.subscribeStates`.
-	// /**
-	//  * Is called if a subscribed object changes
-	//  * @param {string} id
-	//  * @param {ioBroker.Object | null | undefined} obj
-	//  */
-	// onObjectChange(id, obj) {
-	// 	if (obj) {
-	// 		// The object was changed
-	// 		this.log.info(`object ${id} changed: ${JSON.stringify(obj)}`);
-	// 	} else {
-	// 		// The object was deleted
-	// 		this.log.info(`object ${id} deleted`);
-	// 	}
-	// }
 
 	/**
 	 * Is called if a subscribed state changes
@@ -190,7 +180,11 @@ class RepetierServer extends utils.Adapter {
 			if (state.ack) return; // Ignore state change if value is acknowledged
 			// The state was changed
 			this.log.debug(`state ${id} changed: ${state.val} (ack = ${state.ack})`);
+
+			// Store state root in workable format
 			const printer = id.split('.');
+
+			// Send gcode Command to specific printer
 			if (id === `${this.namespace}.${printer[2]}.commands.send-gCode-Command` && state.val){
 
 				const commandData = {
@@ -198,14 +192,14 @@ class RepetierServer extends utils.Adapter {
 					'data': {
 						'cmd': state.val
 					},
-					'printer': 'Ender3_S1',
+					'printer': printer[2],
 					'callback_id': 545
 				};
 				ws.send(JSON.stringify(commandData));
-			} else if (id === `${this.namespace}.${printer[2]}.commands.sendMessage`){
+
+				// Handle message object see https://www.repetier-server.com/manuals/programming/API/index.html
+			} else if (id === `${this.namespace}.sendMessage`){
 				ws.send(JSON.stringify(state.val));
-			} else if (id === `${this.namespace}.allMessageToLog` && typeof state.val == 'boolean' ) {
-				allMessagesToLOG = state.val;
 			}
 		} else {
 			// The state was deleted
@@ -247,16 +241,6 @@ class RepetierServer extends utils.Adapter {
 				},
 			});
 
-			await this.extendObjectAsync(`${dataObject[printer].slug}.commands.sendMessage`, {
-				type: 'state',
-				common : {
-					name: 'sendMessage',
-					type: 'string',
-					role: 'value',
-					write: true,
-				}
-			});
-
 			await this.extendObjectAsync(`${dataObject[printer].slug}.commands.send-gCode-Command`, {
 				type: 'state',
 				common : {
@@ -267,7 +251,6 @@ class RepetierServer extends utils.Adapter {
 				}
 			});
 
-			this.subscribeStates(`${dataObject[printer].slug}.commands.sendMessage`);
 			this.subscribeStates(`${dataObject[printer].slug}.commands.send-gCode-Command`);
 
 			// }
@@ -359,6 +342,7 @@ class RepetierServer extends utils.Adapter {
 						});
 
 						await this.extendObjectAsync(`${data.data[device].printer}.temperatures.bed.${channelNR}.${tempStates}`, {
+
 							type: 'state',
 							common: {
 								name: tempStates,
@@ -370,8 +354,6 @@ class RepetierServer extends utils.Adapter {
 					}
 
 				}
-
-
 
 			}
 		}
@@ -389,23 +371,24 @@ class RepetierServer extends utils.Adapter {
 		return (hours + ':' + minutes + ':' + seconds);
 	}
 
-	// If you need to accept messages in your adapter, uncomment the following block and the corresponding line in the constructor.
-	// /**
-	//  * Some message was sent to this instance over message box. Used by email, pushover, text2speech, ...
-	//  * Using this method requires "common.messagebox" property to be set to true in io-package.json
-	//  * @param {ioBroker.Message} obj
-	//  */
-	// onMessage(obj) {
-	// 	if (typeof obj === 'object' && obj.message) {
-	// 		if (obj.command === 'send') {
-	// 			// e.g. send email or pushover or whatever
-	// 			this.log.info('send command');
+	// Handle messages from adapter settings showing available current printers tp passing custom states
+	async onMessage(obj) {
 
-	// 			// Send response in callback if required
-	// 			if (obj.callback) this.sendTo(obj.from, obj.command, 'Message received', obj.callback);
-	// 		}
-	// 	}
-	// }
+		if (obj) {
+			switch (obj.command) {
+				case 'getPrinterList':
+					if (obj.callback) {
+
+						const printers = ['All','Ender_1', 'Ender_2'];
+
+						this.sendTo(obj.from, obj.command, printers, obj.callback);
+					}
+					break;
+
+			}
+		}
+	}
+
 }
 
 if (require.main !== module) {
