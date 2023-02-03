@@ -13,6 +13,7 @@ const wsConnection = {
 	connectionActive : false,
 	connectionNeeded : true
 };
+const printers = []
 
 // Load your modules here, e.g.:
 // const fs = require("fs");
@@ -224,7 +225,9 @@ class RepetierServer extends utils.Adapter {
 		// console.log(JSON.stringify(data));
 		const dataObject = data.data;
 		console.log(data.event);
+
 		for (const printer in dataObject){
+			if (printers[printer] == null) printers.push(dataObject[printer].slug);
 
 			// if (!this.devices[deviceIP].initialized){
 			await this.extendObjectAsync(dataObject[printer].slug, {
@@ -287,6 +290,7 @@ class RepetierServer extends utils.Adapter {
 			this.setState(`${dataObject[printer].slug}.printTimeRemaining`, {val: calculatedTimeRemaining, ack: true });
 
 		}
+		console.log(printers);
 	}
 
 	async updateTemperatures(data){
@@ -379,9 +383,12 @@ class RepetierServer extends utils.Adapter {
 				case 'getPrinterList':
 					if (obj.callback) {
 
-						const printers = ['All','Ender_1', 'Ender_2'];
+						const printerSelect = ['all'];
+						for (const printer in printers) {
+							printerSelect.push(printers[printer]);
+						}
 
-						this.sendTo(obj.from, obj.command, printers, obj.callback);
+						this.sendTo(obj.from, obj.command, printerSelect, obj.callback);
 					}
 					break;
 
