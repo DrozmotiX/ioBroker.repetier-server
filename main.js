@@ -35,18 +35,15 @@ class RepetierServer extends utils.Adapter {
 	 * Is called when databases are connected and adapter received configuration.
 	 */
 	async onReady() {
-		// Initialize your adapter here
 
 		// Reset the connection indicator during startup
 		this.setState('info.connection', false, true);
-
-		await this.extendObjectAsync('allMessageToLog', {
+		await this.extendObjectAsync(`sendMessage`, {
 			type: 'state',
 			common : {
-				name: 'Define LogLevel for debugging',
-				type: 'boolean',
-				role: 'switch',
-				def: false,
+				name: 'sendMessage',
+				type: 'string',
+				role: 'value',
 				write: true,
 			}
 		});
@@ -194,14 +191,14 @@ class RepetierServer extends utils.Adapter {
 					'data': {
 						'cmd': state.val
 					},
-					'printer': 'Ender3_S1',
+					'printer': printer[2],
 					'callback_id': 545
 				};
 				ws.send(JSON.stringify(commandData));
-			} else if (id === `${this.namespace}.${printer[2]}.commands.sendMessage`){
+
+				// Handle message object see https://www.repetier-server.com/manuals/programming/API/index.html
+			} else if (id === `${this.namespace}.sendMessage`){
 				ws.send(JSON.stringify(state.val));
-			} else if (id === `${this.namespace}.allMessageToLog` && typeof state.val == 'boolean' ) {
-				allMessagesToLOG = state.val;
 			}
 		} else {
 			// The state was deleted
