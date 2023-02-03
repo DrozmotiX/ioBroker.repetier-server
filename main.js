@@ -267,11 +267,13 @@ class RepetierServer extends utils.Adapter {
 
 			for (const printerState in dataObject[printer]){
 				// console.log(dataObject[printer][printerState]);
+				let stateType = typeof dataObject[printer][printerState];
+				if (printerState === 'start' || printerState === 'printTime'|| printerState === 'printStart' || printerState === 'printedTimeComp') stateType = 'string';
 				await this.extendObjectAsync(`${dataObject[printer].slug}.${printerState}`, {
 					type: 'state',
 					common : {
 						name: printerState,
-						type: typeof dataObject[printer][printerState],
+						type: stateType,
 						role: 'value',
 						write: false
 					}
@@ -285,7 +287,7 @@ class RepetierServer extends utils.Adapter {
 				type: 'state',
 				common : {
 					name: 'Remaining Print time',
-					type: 'number',
+					type: 'string',
 					role: 'value',
 					write: false
 				}
