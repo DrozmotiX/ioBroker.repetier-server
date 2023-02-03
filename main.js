@@ -75,6 +75,13 @@ class RepetierServer extends utils.Adapter {
 			await this.webSocketHandler();
 		} else if (wsConnection.connectionNeeded && wsConnection.connectionActive){ // If connection is active, request value updates for defined functions
 			this.requestData('getPrinterInfo');
+			this.log.debug(`Send ping to server`);
+			const messageArray = {
+				'action': 'ping',
+				'data': {},
+				'callback_id': 800
+			};
+			ws.send(JSON.stringify(messageArray));
 		}
 
 		wsConnection.reconnectTimer = setTimeout(() => {
@@ -94,12 +101,15 @@ class RepetierServer extends utils.Adapter {
 				const messageObject = JSON.parse(data.toString());
 				console.log(messageObject.callback_id);
 				if (messageObject.callback_id != '-1') {
-					this.log.info(`${JSON.stringify(messageObject)}`);
+					if (messageObject.callback_id == null){
+						console.error(`undefined found`);
+					}
+					this.log.debug(`${JSON.stringify(messageObject)}`);
 					if (messageObject.callback_id == '900') {
 						await this.updatePrinterValues(messageObject);
 					}
 				} else {
-					if (allMessagesToLOG) this.log.info(`${JSON.stringify(messageObject)}`);
+					this.log.debug(`${JSON.stringify(messageObject)}`);
 					this.updateTemperatures(messageObject);
 				}
 			});
@@ -107,12 +117,12 @@ class RepetierServer extends utils.Adapter {
 			// Handle closure of socket connection
 			ws.on('close', () => {
 				wsConnection.connectionActive = false;
-				this.log.info(`Websocket closed`);
+				if (wsConnection.connectionNeeded === true)	this.log.warn(`Connection with Repetier Server closed, will try to reconnect`);
 
 			});
 
 			ws.on('open', () => {
-				this.log.info(`Websocket connected`);
+				this.log.info(`Connected with Repetier Server`);
 				wsConnection.connectionActive = true;
 				this.requestData(`getPrinterInfo`);
 			});
@@ -134,11 +144,18 @@ class RepetierServer extends utils.Adapter {
 	onUnload(callback) {
 
 		try {
-			// Here you must clear all timeouts or intervals that may still be active
-			// clearTimeout(timeout1);
-			// clearTimeout(timeout2);
-			// ...
-			// clearInterval(interval1);
+
+			// End timer if running
+			if (wsConnection && wsConnection.reconnectTimer ) {
+				clearTimeout(wsConnection.reconnectTimer );
+			}
+
+			// Close web socket if connected
+			if (wsConnection.connectionNeeded && wsConnection.connectionActive){
+				wsConnection.connectionNeeded = false;
+				ws.close();
+				this.log.info(`Connection with Repetier Server closed`);
+			}
 
 			callback();
 		} catch (e) {
@@ -172,7 +189,7 @@ class RepetierServer extends utils.Adapter {
 		if (state) {
 			if (state.ack) return; // Ignore state change if value is acknowledged
 			// The state was changed
-			this.log.info(`state ${id} changed: ${state.val} (ack = ${state.ack})`);
+			this.log.debug(`state ${id} changed: ${state.val} (ack = ${state.ack})`);
 			const printer = id.split('.');
 			if (id === `${this.namespace}.${printer[2]}.commands.send-gCode-Command` && state.val){
 
@@ -192,7 +209,7 @@ class RepetierServer extends utils.Adapter {
 			}
 		} else {
 			// The state was deleted
-			this.log.info(`state ${id} deleted`);
+			this.log.debug(`state ${id} deleted`);
 		}
 	}
 
@@ -257,11 +274,13 @@ class RepetierServer extends utils.Adapter {
 
 			for (const printerState in dataObject[printer]){
 				// console.log(dataObject[printer][printerState]);
+				let stateType = typeof dataObject[printer][printerState];
+				if (printerState === 'start' || printerState === 'printTime'|| printerState === 'printStart' || printerState === 'printedTimeComp') stateType = 'string';
 				await this.extendObjectAsync(`${dataObject[printer].slug}.${printerState}`, {
 					type: 'state',
 					common : {
 						name: printerState,
-						type: typeof dataObject[printer][printerState],
+						type: stateType,
 						role: 'value',
 						write: false
 					}
@@ -275,7 +294,7 @@ class RepetierServer extends utils.Adapter {
 				type: 'state',
 				common : {
 					name: 'Remaining Print time',
-					type: 'number',
+					type: 'string',
 					role: 'value',
 					write: false
 				}
@@ -301,16 +320,55 @@ class RepetierServer extends utils.Adapter {
 				});
 
 				for (const tempStates in data.data[device].data){
-					await this.extendObjectAsync(`${data.data[device].printer}.temperatures.${tempStates}`, {
-						type: 'state',
-						common : {
-							name: tempStates,
-							type: typeof data.data[device].data[tempStates],
-							role: 'value',
-							write: false
-						}
+					await this.extendObjectAsync(`${data.data[device].printer}.temperatures.extruder`, {
+						type: 'channel',
+						common: {
+							name: data.data[device].printer
+						},
 					});
-					this.setState(`${data.data[device].printer}.temperatures.${tempStates}`, {val: data.data[device].data[tempStates], ack: true });
+
+					if (data.data[device].data.id < 1000) {
+
+						await this.extendObjectAsync(`${data.data[device].printer}.temperatures.extruder.${data.data[device].data.id}`, {
+							type: 'channel',
+							common: {
+								name: `Extruder channel ${data.data[device].data.id}`
+							},
+						});
+
+						await this.extendObjectAsync(`${data.data[device].printer}.temperatures.extruder.${data.data[device].data.id}.${tempStates}`, {
+							type: 'state',
+							common: {
+								name: tempStates,
+								type: typeof data.data[device].data[tempStates],
+								role: 'value',
+							}
+						});
+						this.setState(`${data.data[device].printer}.temperatures.extruder.${data.data[device].data.id}.${tempStates}`, {val: data.data[device].data[tempStates], ack: true });
+					} else {
+
+						// Use recognisable channel ID for bed
+
+						const channelNR = 1000 - data.data[device].data.id;
+
+						await this.extendObjectAsync(`${data.data[device].printer}.temperatures.bed.${channelNR}`, {
+							type: 'channel',
+							common: {
+								name: `Extruder channel ${channelNR}`
+							},
+						});
+
+						await this.extendObjectAsync(`${data.data[device].printer}.temperatures.bed.${channelNR}.${tempStates}`, {
+							type: 'state',
+							common: {
+								name: tempStates,
+								type: typeof data.data[device].data[tempStates],
+								role: 'value',
+							}
+						});
+						this.setState(`${data.data[device].printer}.temperatures.bed.${channelNR}.${tempStates}`, {val: data.data[device].data[tempStates], ack: true });
+					}
+
 				}
 
 

@@ -1,6 +1,6 @@
 {
   "name": "iobroker.repetier-server",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "description": "repetier-server",
   "author": {
     "name": "DutchmanNL",
@@ -23,10 +23,10 @@
   },
   "dependencies": {
     "@iobroker/adapter-core": "^2.6.7",
-    "@iobroker/dev-server": "^0.6.0",
     "ws": "^8.12.0"
   },
   "devDependencies": {
+    "@iobroker/dev-server": "^0.6.0",
     "@alcalzone/release-script": "^3.5.9",
     "@alcalzone/release-script-plugin-iobroker": "^3.5.9",
     "@alcalzone/release-script-plugin-license": "^3.5.9",
