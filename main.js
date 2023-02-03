@@ -144,11 +144,18 @@ class RepetierServer extends utils.Adapter {
 	onUnload(callback) {
 
 		try {
-			// Here you must clear all timeouts or intervals that may still be active
-			// clearTimeout(timeout1);
-			// clearTimeout(timeout2);
-			// ...
-			// clearInterval(interval1);
+
+			// End timer if running
+			if (wsConnection && wsConnection.reconnectTimer ) {
+				clearTimeout(wsConnection.reconnectTimer );
+			}
+
+			// Close web socket if connected
+			if (wsConnection.connectionNeeded && wsConnection.connectionActive){
+				wsConnection.connectionNeeded = false;
+				ws.close();
+				this.log.info(`Connection with Repetier Server closed`);
+			}
 
 			callback();
 		} catch (e) {
