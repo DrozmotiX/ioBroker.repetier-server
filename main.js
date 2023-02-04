@@ -283,9 +283,8 @@ class RepetierServer extends utils.Adapter {
 
 						await this.localExtendObject(`${data.data[device].printer}.temperatures.bed.${channelNR}`, 'channel', `Extruder channel ${channelNR}`);
 
-
 						await this.localeStateSetCreate(`${data.data[device].printer}.temperatures.bed.${channelNR}.${tempStates}`, tempStates, data.data[device].data[tempStates]);
-							}
+					}
 
 				}
 

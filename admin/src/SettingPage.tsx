@@ -34,8 +34,6 @@ export const SettingPage: React.FC<SettingPageProps> = ({ secret, onChange, sett
 		return value;
 	};
 
-	// erstelle mir eine funktion die mir die Daten aus dem TreeTable zurückgibt
-
 	return (
 		<React.Fragment>
 			<Grid
