@@ -89,9 +89,10 @@ class RepetierServer extends utils.Adapter {
 
 		}
 
+		// Run connection handler every 5 seconds
 		wsConnection.reconnectTimer = setTimeout(() => {
 			this.connectionHandler();
-		}, (5000)); // Run connection handler every 5 seconds
+		}, (5000));
 
 	}
 
@@ -107,7 +108,7 @@ class RepetierServer extends utils.Adapter {
 			ws.on('message', async (data) => {
 				wsConnection.connectionActive = true;
 				const messageObject = JSON.parse(data.toString());
-				console.log(messageObject.callback_id);
+				console.log(`[Callback ID] ${messageObject.callback_id}`);
 				if (messageObject.callback_id != '-1') {
 					if (messageObject.callback_id == null){
 						console.error(`undefined found`);
@@ -210,6 +211,9 @@ class RepetierServer extends utils.Adapter {
 		}
 	}
 
+	/**
+	 * Request data from websocket
+	 */
 	requestData(requestType){
 
 		switch (requestType) {
@@ -223,10 +227,12 @@ class RepetierServer extends utils.Adapter {
 
 	}
 
+	/**
+	 * Handle state updates receive from websocket
+	 */
 	async updatePrinterValues(data){
 		// console.log(JSON.stringify(data));
 		const dataObject = data.data;
-		console.log(data.event);
 
 		for (const printer in dataObject){
 			if (printers[printer] == null) printers.push(dataObject[printer].slug);
