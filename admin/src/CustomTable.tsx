@@ -70,7 +70,7 @@ export const CustomTable: React.FC<CustomTableProps> = ({ setting, onChange }): 
 				desc: value.desc,
 			};
 			setRows(newRows);
-			console.log('Edit customGCodeCommands',newRows)
+			console.log('Edit customGCodeCommands', newRows)
 			onChange('customGCodeCommands', newRows);
 		}
 	};
