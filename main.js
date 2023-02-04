@@ -15,7 +15,7 @@ const wsConnection = {
 	connectionActive : false,
 	connectionNeeded : true
 };
-const printers = []
+const printers = [];
 
 // Load your modules here, e.g.:
 // const fs = require("fs");
@@ -45,7 +45,7 @@ class RepetierServer extends utils.Adapter {
 		// Reset the connection indicator during startup
 		this.setState('info.connection', false, true);
 
-		await this.localeStateSetCreate('sendMessage', 'Send Custom Message', '')
+		await this.localeStateSetCreate('sendMessage', 'Send Custom Message', '');
 
 		//ToDo: Consider to have this as option for advance mode only
 		// Create and listen to state to send messags
@@ -114,7 +114,7 @@ class RepetierServer extends utils.Adapter {
 					}
 				} else {
 					this.log.debug(`${JSON.stringify(messageObject)}`);
-					this.updateTemperatures(messageObject);
+					await this.updateTemperatures(messageObject);
 				}
 			});
 
@@ -271,9 +271,9 @@ class RepetierServer extends utils.Adapter {
 
 					if (data.data[device].data.id < 1000) {
 
-						await this.localExtendObject(`${data.data[device].printer}.temperatures.extruder.${data.data[device].data.id}`, 'channel',  `Extruder channel ${data.data[device].data.id}`;
+						await this.localExtendObject(`${data.data[device].printer}.temperatures.extruder.${data.data[device].data.id}`, 'channel',  `Extruder channel ${data.data[device].data.id}`);
 
-						await this.localeStateSetCreate(`${data.data[device].printer}.temperatures.extruder.${data.data[device].data.id}.${tempStates}`, tempStates, data.data[device].data[tempStates])
+						await this.localeStateSetCreate(`${data.data[device].printer}.temperatures.extruder.${data.data[device].data.id}.${tempStates}`, tempStates, data.data[device].data[tempStates]);
 
 					} else {
 
