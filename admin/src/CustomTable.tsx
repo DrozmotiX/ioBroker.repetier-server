@@ -7,6 +7,7 @@ import { useI18n } from 'iobroker-react/hooks';
 import React, { useState } from 'react';
 import { AddModal } from './components/AddModal';
 import { Row } from './components/AddTableDialog';
+
 // import { Spacer } from './components/Spacer';
 
 interface CustomTableProps {
@@ -60,7 +61,6 @@ export const CustomTable: React.FC<CustomTableProps> = ({ setting, onChange }): 
 
 	const handleEdit = (value: Row | undefined, index: number) => {
 		if (value) {
-			console.log('Edit customGCodeCommands value', value);
 			const newRows = [...rows];
 			newRows[index] = {
 				select: value.select,
@@ -70,7 +70,6 @@ export const CustomTable: React.FC<CustomTableProps> = ({ setting, onChange }): 
 				desc: value.desc,
 			};
 			setRows(newRows);
-			console.log('Edit customGCodeCommands', newRows);
 			onChange('customGCodeCommands', newRows);
 		}
 	};
@@ -94,7 +93,7 @@ export const CustomTable: React.FC<CustomTableProps> = ({ setting, onChange }): 
 								{_('Id')}
 							</TableCell>
 							<TableCell align="center">{_('Command')}</TableCell>
-							<TableCell align="center">{_('Decription')}</TableCell>
+							<TableCell align="center">{_('Description')}</TableCell>
 							<TableCell align="center">{_('type')}</TableCell>
 							<TableCell align="center">{_('value')}</TableCell>
 							<TableCell align="center">{_('printer(s)')}</TableCell>
@@ -112,9 +111,11 @@ export const CustomTable: React.FC<CustomTableProps> = ({ setting, onChange }): 
 								</TableCell>
 								<TableCell align="center">{row.command}</TableCell>
 								<TableCell align="center">{row.desc}</TableCell>
-								<TableCell align="center">{row.type? _('Send state value'): _(`Send defined value`)}</TableCell>
+								<TableCell align="center">
+									{row.type ? _('Send state value') : _(`Send defined value`)}
+								</TableCell>
 								<TableCell align="center">{row.value}</TableCell>
-								<TableCell align="center">{row.select}</TableCell>
+								<TableCell align="center">{row.select.join(', ')}</TableCell>
 								<TableCell align={'center'}>
 									<AddModal mode={'edit'} editRow={handleEdit} oldRow={row} index={index} />
 									<IconButton aria-label="delete" onClick={() => handleDelete(index)}>
