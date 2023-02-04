@@ -31,6 +31,8 @@ class RepetierServer extends utils.Adapter {
 		this.on('stateChange', this.onStateChange.bind(this));
 		this.on('message', this.onMessage.bind(this));
 		this.on('unload', this.onUnload.bind(this));
+
+		this.createdStatesDetails = {}; // Array of created states to avoid object overwrites
 	}
 
 	/**
@@ -50,7 +52,7 @@ class RepetierServer extends utils.Adapter {
 			}
 		});
 
-		//ToDo: Consider to have this as option for advance modus
+		//ToDo: Consider to have this as option for advance mode only
 		// Create and listen to state to send messags
 		this.subscribeStates(`sendMessage`);
 		// Start connection handler
@@ -229,20 +231,9 @@ class RepetierServer extends utils.Adapter {
 		for (const printer in dataObject){
 			if (printers[printer] == null) printers.push(dataObject[printer].slug);
 
-			// if (!this.devices[deviceIP].initialized){
-			await this.extendObjectAsync(dataObject[printer].slug, {
-				type: 'device',
-				common: {
-					name: printer
-				},
-			});
+			await this.localExtendObject(dataObject[printer].slug, 'device', printer);
 
-			await this.extendObjectAsync(`${dataObject[printer].slug}.commands`, {
-				type: 'channel',
-				common: {
-					name: `Printer commands`
-				},
-			});
+			await this.localExtendObject(`${dataObject[printer].slug}.commands`, 'channel', `Printer commands`);
 
 			await this.extendObjectAsync(`${dataObject[printer].slug}.commands.send-gCode-Command`, {
 				type: 'state',
@@ -299,29 +290,16 @@ class RepetierServer extends utils.Adapter {
 		for (const device in data.data){
 			// console.log(data.data[device]);
 			if (data.data[device].event === `temp`){ // Verify if message contains updates for temperatures
-				await this.extendObjectAsync(`${data.data[device].printer}.temperatures`, {
-					type: 'channel',
-					common: {
-						name: data.data[device].printer
-					},
-				});
+
+				await this.localExtendObject(`${data.data[device].printer}.temperatures`, 'channel', data.data[device].printer);
 
 				for (const tempStates in data.data[device].data){
-					await this.extendObjectAsync(`${data.data[device].printer}.temperatures.extruder`, {
-						type: 'channel',
-						common: {
-							name: data.data[device].printer
-						},
-					});
+
+					await this.localExtendObject(`${data.data[device].printer}.temperatures.extruder`, 'channel', data.data[device].printer);
 
 					if (data.data[device].data.id < 1000) {
 
-						await this.extendObjectAsync(`${data.data[device].printer}.temperatures.extruder.${data.data[device].data.id}`, {
-							type: 'channel',
-							common: {
-								name: `Extruder channel ${data.data[device].data.id}`
-							},
-						});
+						await this.localExtendObject(`${data.data[device].printer}.temperatures.extruder.${data.data[device].data.id}`, `Extruder channel ${data.data[device].data.id}`;
 
 						await this.extendObjectAsync(`${data.data[device].printer}.temperatures.extruder.${data.data[device].data.id}.${tempStates}`, {
 							type: 'state',
@@ -338,12 +316,8 @@ class RepetierServer extends utils.Adapter {
 
 						const channelNR = 1000 - data.data[device].data.id;
 
-						await this.extendObjectAsync(`${data.data[device].printer}.temperatures.bed.${channelNR}`, {
-							type: 'channel',
-							common: {
-								name: `Extruder channel ${channelNR}`
-							},
-						});
+						await this.localExtendObject(`${data.data[device].printer}.temperatures.bed.${channelNR}`, 'channel', `Extruder channel ${channelNR}`);
+
 
 						await this.extendObjectAsync(`${data.data[device].printer}.temperatures.bed.${channelNR}.${tempStates}`, {
 
@@ -393,6 +367,31 @@ class RepetierServer extends utils.Adapter {
 					break;
 
 			}
+		}
+	}
+
+	/**
+	 * Create root objects
+	 * @param {string} id
+	 * @param {'channel' | 'device'} type
+	 * @param {string} name
+	 */
+	async localExtendObject(id, type, name) {
+
+		try {
+			const objectDefinition = {
+				type: type,
+				common: {
+					name: name
+				}
+			};
+
+			if (!this.createdStatesDetails[id]){
+				await this.extendObjectAsync(id, objectDefinition);
+				this.createdStatesDetails[id] = objectDefinition;
+			}
+		} catch (e) {
+			this.log.error(`[ localExtendObject ] ${e}`);
 		}
 	}
 
