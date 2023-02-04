@@ -120,7 +120,7 @@ export const AddTableDialog: React.FC<RowProps> = ({ mode, newRow, oldRow, optio
 			console.log('true');
 			setShowValue(false);
 			if (mode === 'edit') setRow({ ...oldRow, value: '', type: type } as Row);
-			if (mode === 'add') setRow({ ...row, value: '', type: type  });
+			if (mode === 'add') setRow({ ...row, value: '', type: type });
 			setValue('');
 			setType(event.target.value);
 			// if (mode === 'edit') setRow({ ...oldRow, type: type } as Row);
@@ -132,8 +132,6 @@ export const AddTableDialog: React.FC<RowProps> = ({ mode, newRow, oldRow, optio
 			if (mode === 'edit') setRow({ ...oldRow, type: type } as Row);
 			if (mode === 'add') setRow({ ...row, type: type });
 		}
-
-
 	};
 
 	const handleChangeValue = (event) => {

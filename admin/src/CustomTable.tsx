@@ -52,7 +52,7 @@ export const CustomTable: React.FC<CustomTableProps> = ({ setting, onChange }): 
 					desc: value.desc,
 				},
 			];
-			console.log(`customGCodeCommands `, value)
+			console.log(`customGCodeCommands `, value);
 			setRows(newRows);
 			onChange('customGCodeCommands', newRows);
 		}
@@ -60,7 +60,7 @@ export const CustomTable: React.FC<CustomTableProps> = ({ setting, onChange }): 
 
 	const handleEdit = (value: Row | undefined, index: number) => {
 		if (value) {
-			console.log('Edit customGCodeCommands value', value)
+			console.log('Edit customGCodeCommands value', value);
 			const newRows = [...rows];
 			newRows[index] = {
 				select: value.select,
@@ -70,7 +70,7 @@ export const CustomTable: React.FC<CustomTableProps> = ({ setting, onChange }): 
 				desc: value.desc,
 			};
 			setRows(newRows);
-			console.log('Edit customGCodeCommands', newRows)
+			console.log('Edit customGCodeCommands', newRows);
 			onChange('customGCodeCommands', newRows);
 		}
 	};

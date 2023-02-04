@@ -34,7 +34,6 @@ export const SettingPage: React.FC<SettingPageProps> = ({ secret, onChange, sett
 		return value;
 	};
 
-
 	return (
 		<React.Fragment>
 			<Grid
