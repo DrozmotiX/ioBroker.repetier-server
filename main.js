@@ -9,10 +9,13 @@
 const utils = require('@iobroker/adapter-core');
 const WebSocket = require('ws'); // Lib to handle Websocket
 let ws;
+const stateDef = require('./lib/stateDef.js'); // Load attribute library
+const warnMessages = {}; // Array containing sentry messages
 const wsConnection = {
 	connectionActive : false,
 	connectionNeeded : true
 };
+const printers = [];
 
 // Load your modules here, e.g.:
 // const fs = require("fs");
@@ -30,6 +33,8 @@ class RepetierServer extends utils.Adapter {
 		this.on('stateChange', this.onStateChange.bind(this));
 		this.on('message', this.onMessage.bind(this));
 		this.on('unload', this.onUnload.bind(this));
+
+		this.createdStatesDetails = {}; // Array of created states to avoid object overwrites
 	}
 
 	/**
@@ -39,17 +44,10 @@ class RepetierServer extends utils.Adapter {
 
 		// Reset the connection indicator during startup
 		this.setState('info.connection', false, true);
-		await this.extendObjectAsync(`sendMessage`, {
-			type: 'state',
-			common : {
-				name: 'sendMessage',
-				type: 'string',
-				role: 'value',
-				write: true,
-			}
-		});
 
-		//ToDo: Consider to have this as option for advance modus
+		await this.localeStateSetCreate('sendMessage', 'Send Custom Message', '');
+
+		//ToDo: Consider to have this as option for advance mode only
 		// Create and listen to state to send messags
 		this.subscribeStates(`sendMessage`);
 		// Start connection handler
@@ -86,9 +84,10 @@ class RepetierServer extends utils.Adapter {
 
 		}
 
+		// Run connection handler every 5 seconds
 		wsConnection.reconnectTimer = setTimeout(() => {
 			this.connectionHandler();
-		}, (5000)); // Run connection handler every 5 seconds
+		}, (5000));
 
 	}
 
@@ -104,7 +103,7 @@ class RepetierServer extends utils.Adapter {
 			ws.on('message', async (data) => {
 				wsConnection.connectionActive = true;
 				const messageObject = JSON.parse(data.toString());
-				console.log(messageObject.callback_id);
+				console.log(`[Callback ID] ${messageObject.callback_id}`);
 				if (messageObject.callback_id != '-1') {
 					if (messageObject.callback_id == null){
 						console.error(`undefined found`);
@@ -115,7 +114,7 @@ class RepetierServer extends utils.Adapter {
 					}
 				} else {
 					this.log.debug(`${JSON.stringify(messageObject)}`);
-					this.updateTemperatures(messageObject);
+					await this.updateTemperatures(messageObject);
 				}
 			});
 
@@ -207,6 +206,9 @@ class RepetierServer extends utils.Adapter {
 		}
 	}
 
+	/**
+	 * Request data from websocket
+	 */
 	requestData(requestType){
 
 		switch (requestType) {
@@ -220,73 +222,38 @@ class RepetierServer extends utils.Adapter {
 
 	}
 
+	/**
+	 * Handle state updates receive from websocket
+	 */
 	async updatePrinterValues(data){
 		// console.log(JSON.stringify(data));
 		const dataObject = data.data;
-		console.log(data.event);
+
 		for (const printer in dataObject){
+			if (printers[printer] == null) printers.push(dataObject[printer].slug);
 
-			// if (!this.devices[deviceIP].initialized){
-			await this.extendObjectAsync(dataObject[printer].slug, {
-				type: 'device',
-				common: {
-					name: printer
-				},
-			});
+			await this.localExtendObject(dataObject[printer].slug, 'device', printer);
 
-			await this.extendObjectAsync(`${dataObject[printer].slug}.commands`, {
-				type: 'channel',
-				common: {
-					name: `Printer commands`
-				},
-			});
+			await this.localExtendObject(`${dataObject[printer].slug}.commands`, 'channel', `Printer commands`);
 
-			await this.extendObjectAsync(`${dataObject[printer].slug}.commands.send-gCode-Command`, {
-				type: 'state',
-				common : {
-					name: 'send gCode Command (M256 B0)',
-					type: 'string',
-					role: 'value',
-					write: true,
-				}
-			});
-
-			this.subscribeStates(`${dataObject[printer].slug}.commands.send-gCode-Command`);
+			await this.localeStateSetCreate(`${dataObject[printer].slug}.commands.send-gCode-Command`, 'send gCode Command (M256 B0)', '');
 
 			// }
 
 			for (const printerState in dataObject[printer]){
-				// console.log(dataObject[printer][printerState]);
-				let stateType = typeof dataObject[printer][printerState];
-				if (printerState === 'start' || printerState === 'printTime'|| printerState === 'printStart' || printerState === 'printedTimeComp') stateType = 'string';
-				await this.extendObjectAsync(`${dataObject[printer].slug}.${printerState}`, {
-					type: 'state',
-					common : {
-						name: printerState,
-						type: stateType,
-						role: 'value',
-						write: false
-					}
-				});
 				let stateValue = dataObject[printer][printerState];
 				if (printerState === 'start' || printerState === 'printTime'|| printerState === 'printStart' || printerState === 'printedTimeComp') stateValue = this.reCalcSeconds(stateValue);
-				this.setState(`${dataObject[printer].slug}.${printerState}`, {val: stateValue, ack: true });
-			}
 
-			await this.extendObjectAsync(`${dataObject[printer].slug}.printTimeRemaining`, {
-				type: 'state',
-				common : {
-					name: 'Remaining Print time',
-					type: 'string',
-					role: 'value',
-					write: false
-				}
-			});
+				await this.localeStateSetCreate(`${dataObject[printer].slug}.${printerState}`, printerState, stateValue);
+			}
 
 			const calculatedTimeRemaining = this.reCalcSeconds(dataObject[printer].printTime - dataObject[printer].printedTimeComp);
 			this.setState(`${dataObject[printer].slug}.printTimeRemaining`, {val: calculatedTimeRemaining, ack: true });
 
+			await this.localeStateSetCreate(`${dataObject[printer].slug}.printTimeRemaining`, 'Remaining Print time', calculatedTimeRemaining);
+
 		}
+		console.log(printers);
 	}
 
 	async updateTemperatures(data){
@@ -295,63 +262,30 @@ class RepetierServer extends utils.Adapter {
 		for (const device in data.data){
 			// console.log(data.data[device]);
 			if (data.data[device].event === `temp`){ // Verify if message contains updates for temperatures
-				await this.extendObjectAsync(`${data.data[device].printer}.temperatures`, {
-					type: 'channel',
-					common: {
-						name: data.data[device].printer
-					},
-				});
+
+				await this.localExtendObject(`${data.data[device].printer}.temperatures`, 'channel', data.data[device].printer);
 
 				for (const tempStates in data.data[device].data){
-					await this.extendObjectAsync(`${data.data[device].printer}.temperatures.extruder`, {
-						type: 'channel',
-						common: {
-							name: data.data[device].printer
-						},
-					});
+
+					await this.localExtendObject(`${data.data[device].printer}.temperatures.extruder`, 'channel', data.data[device].printer);
 
 					if (data.data[device].data.id < 1000) {
 
-						await this.extendObjectAsync(`${data.data[device].printer}.temperatures.extruder.${data.data[device].data.id}`, {
-							type: 'channel',
-							common: {
-								name: `Extruder channel ${data.data[device].data.id}`
-							},
-						});
+						await this.localExtendObject(`${data.data[device].printer}.temperatures.extruder.${data.data[device].data.id}`, 'channel',  `Extruder channel ${data.data[device].data.id}`);
 
-						await this.extendObjectAsync(`${data.data[device].printer}.temperatures.extruder.${data.data[device].data.id}.${tempStates}`, {
-							type: 'state',
-							common: {
-								name: tempStates,
-								type: typeof data.data[device].data[tempStates],
-								role: 'value',
-							}
-						});
-						this.setState(`${data.data[device].printer}.temperatures.extruder.${data.data[device].data.id}.${tempStates}`, {val: data.data[device].data[tempStates], ack: true });
+						await this.localeStateSetCreate(`${data.data[device].printer}.temperatures.extruder.${data.data[device].data.id}.${tempStates}`, tempStates, data.data[device].data[tempStates]);
+
 					} else {
 
 						// Use recognisable channel ID for bed
 
 						const channelNR = 1000 - data.data[device].data.id;
 
-						await this.extendObjectAsync(`${data.data[device].printer}.temperatures.bed.${channelNR}`, {
-							type: 'channel',
-							common: {
-								name: `Extruder channel ${channelNR}`
-							},
-						});
+						await this.localExtendObject(`${data.data[device].printer}.temperatures.bed.${channelNR}`, 'channel', `Extruder channel ${channelNR}`);
 
-						await this.extendObjectAsync(`${data.data[device].printer}.temperatures.bed.${channelNR}.${tempStates}`, {
 
-							type: 'state',
-							common: {
-								name: tempStates,
-								type: typeof data.data[device].data[tempStates],
-								role: 'value',
+						await this.localeStateSetCreate(`${data.data[device].printer}.temperatures.bed.${channelNR}.${tempStates}`, tempStates, data.data[device].data[tempStates]);
 							}
-						});
-						this.setState(`${data.data[device].printer}.temperatures.bed.${channelNR}.${tempStates}`, {val: data.data[device].data[tempStates], ack: true });
-					}
 
 				}
 
@@ -379,13 +313,119 @@ class RepetierServer extends utils.Adapter {
 				case 'getPrinterList':
 					if (obj.callback) {
 
-						const printers = ['All','Ender_1', 'Ender_2'];
+						const printerSelect = ['all'];
+						for (const printer in printers) {
+							printerSelect.push(printers[printer]);
+						}
 
-						this.sendTo(obj.from, obj.command, printers, obj.callback);
+						this.sendTo(obj.from, obj.command, printerSelect, obj.callback);
 					}
 					break;
 
 			}
+		}
+	}
+
+	/**
+	 * Create root objects
+	 * @param {string} id
+	 * @param {'channel' | 'device'} type
+	 * @param {string} name
+	 */
+	async localExtendObject(id, type, name) {
+
+		try {
+			const objectDefinition = {
+				type: type,
+				common: {
+					name: name
+				}
+			};
+
+			if (!this.createdStatesDetails[id]){
+				await this.extendObjectAsync(id, objectDefinition);
+				this.createdStatesDetails[id] = objectDefinition;
+			}
+		} catch (e) {
+			this.log.error(`[ localExtendObject ] ${e}`);
+		}
+	}
+
+	/**
+	 * State create and value update handler
+	 * @param {string} stateName ID of state to create
+	 * @param {string} name Name of object
+	 * @param {object} value Value
+	 */
+	async localeStateSetCreate(stateName, name, value) {
+		this.log.debug('Create_state called for : ' + stateName + ' with value : ' + value);
+
+		try {
+
+			// Try to get details from state lib, if not use defaults. throw warning is states is not known in attribute list
+			const common = {};
+			if (!stateDef[name]) {
+				const warnMessage = `State attribute definition missing for : ${name}`;
+				if (warnMessages[name] !== warnMessage) {
+					this.log.warn(`State attribute definition missing for : ${name} with value : ${value}`);
+				}
+			}
+
+			if (stateDef[name] !== null && stateDef[name].min !== null){
+				common.min = stateDef[name].min;
+			}
+			if (stateDef[name] !== null && stateDef[name].max !== null){
+				common.max = stateDef[name].max;
+			}
+
+			common.name = stateDef[name] !== undefined ? stateDef[name].name || name : name;
+			common.type = stateDef[name] !== undefined ? stateDef[name].type || typeof (value) : typeof (value) ;
+			common.role = stateDef[name] !== undefined ? stateDef[name].role || 'state' : 'state';
+			common.read = true;
+			common.unit = stateDef[name] !== undefined ? stateDef[name].unit || '' : '';
+			common.write = stateDef[name] !== undefined ? stateDef[name].write || false : false;
+
+			if ((!this.createdStatesDetails[stateName])
+				|| (this.createdStatesDetails[stateName]
+					&& (
+						common.name !== this.createdStatesDetails[stateName].name
+						|| common.name !== this.createdStatesDetails[stateName].name
+						|| common.type !== this.createdStatesDetails[stateName].type
+						|| common.role !== this.createdStatesDetails[stateName].role
+						|| common.read !== this.createdStatesDetails[stateName].read
+						|| common.unit !== this.createdStatesDetails[stateName].unit
+						|| common.write !== this.createdStatesDetails[stateName].write
+					)
+				)) {
+
+				this.log.debug(`An attribute has changed : ${stateName} | old ${this.createdStatesDetails[stateName]} | new ${JSON.stringify(common)}`);
+
+				await this.extendObjectAsync(stateName, {
+					type: 'state',
+					common
+				});
+
+				// Store current object definition to memory
+				this.createdStatesDetails[stateName] = common;
+
+				// Subscribe on state changes if writable
+				common.write && this.subscribeStates(stateName);
+
+			} else {
+				// console.log(`Nothing changed do not update object`);
+			}
+
+			// Set value to state
+			if (value != null) {
+				await this.setStateChangedAsync(stateName, {
+					val: typeof value === 'object' ? JSON.stringify(value) : value, // real objects are not allowed
+					ack: true,
+				});
+			}
+
+		} catch (error) {
+			// this.errorHandler(`[create_state]`, error);
+			this.log.error(`[create_state] ${error}`);
 		}
 	}
 

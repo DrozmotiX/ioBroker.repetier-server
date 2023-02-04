@@ -7,10 +7,13 @@ import { useI18n } from 'iobroker-react/hooks';
 import React, { useState } from 'react';
 import { AddModal } from './components/AddModal';
 import { Row } from './components/AddTableDialog';
-import { Spacer } from './components/Spacer';
+// import { Spacer } from './components/Spacer';
 
 interface CustomTableProps {
-	onChange: (id: keyof ioBroker.AdapterConfig, value: { select: string }[]) => void;
+	onChange: (
+		id: keyof ioBroker.AdapterConfig,
+		value: { select: string[]; value: string; type: boolean; command: string; desc: string }[],
+	) => void;
 	setting: ioBroker.AdapterConfig;
 }
 
@@ -20,33 +23,55 @@ export const CustomTable: React.FC<CustomTableProps> = ({ setting, onChange }): 
 	// rows of the table
 	const [rows, setRows] = useState<
 		{
-			select: string;
+			select: string[];
+			value: string;
+			type: boolean;
+			command: string;
+			desc: string;
 		}[]
-	>(setting.tableValues);
+	>(setting.customGCodeCommands);
 
 	//delete row
 	const handleDelete = (index) => {
 		const newRows = rows.filter((row, i) => i !== index);
 		setRows(newRows);
-		onChange('tableValues', newRows);
+		onChange('customGCodeCommands', newRows);
 		console.log(newRows);
 	};
 
 	//add row
 	const handleAdd = (value: Row | undefined) => {
 		if (value) {
-			const newRows = [...rows, { select: value.select }];
+			const newRows = [
+				...rows,
+				{
+					select: value.select,
+					value: value.value,
+					type: value.type,
+					command: value.command,
+					desc: value.desc,
+				},
+			];
+			console.log(`customGCodeCommands `, value)
 			setRows(newRows);
-			onChange('tableValues', newRows);
+			onChange('customGCodeCommands', newRows);
 		}
 	};
 
 	const handleEdit = (value: Row | undefined, index: number) => {
 		if (value) {
+			console.log('Edit customGCodeCommands value', value)
 			const newRows = [...rows];
-			newRows[index] = { select: value.select };
+			newRows[index] = {
+				select: value.select,
+				value: value.value,
+				type: value.type,
+				command: value.command,
+				desc: value.desc,
+			};
 			setRows(newRows);
-			onChange('tableValues', newRows);
+			console.log('Edit customGCodeCommands', newRows)
+			onChange('customGCodeCommands', newRows);
 		}
 	};
 
@@ -55,7 +80,6 @@ export const CustomTable: React.FC<CustomTableProps> = ({ setting, onChange }): 
 	return (
 		<React.Fragment>
 			<AddModal mode={'add'} newRow={(value) => handleAdd(value)} />
-			<Spacer text={_('Table')} variant={'h1'} />
 			<TableContainer component={Paper}>
 				<Table sx={{ minWidth: 650 }} size="medium" aria-label="simple table">
 					<TableHead>
@@ -69,8 +93,11 @@ export const CustomTable: React.FC<CustomTableProps> = ({ setting, onChange }): 
 							>
 								{_('Id')}
 							</TableCell>
-							<TableCell align="center">{_('Name')}</TableCell>
-							<TableCell align="center">{_('select')}</TableCell>
+							<TableCell align="center">{_('Command')}</TableCell>
+							<TableCell align="center">{_('Decription')}</TableCell>
+							<TableCell align="center">{_('type')}</TableCell>
+							<TableCell align="center">{_('value')}</TableCell>
+							<TableCell align="center">{_('printer(s)')}</TableCell>
 							<TableCell align="center">{_('Actions')}</TableCell>
 						</TableRow>
 					</TableHead>
@@ -83,7 +110,10 @@ export const CustomTable: React.FC<CustomTableProps> = ({ setting, onChange }): 
 								<TableCell id={'id'} align="center">
 									{index + 1}
 								</TableCell>
-								<TableCell align="center">{_('Name')}</TableCell>
+								<TableCell align="center">{row.command}</TableCell>
+								<TableCell align="center">{row.desc}</TableCell>
+								<TableCell align="center">{row.type? _('Send state value'): _(`Send defined value`)}</TableCell>
+								<TableCell align="center">{row.value}</TableCell>
 								<TableCell align="center">{row.select}</TableCell>
 								<TableCell align={'center'}>
 									<AddModal mode={'edit'} editRow={handleEdit} oldRow={row} index={index} />
@@ -96,7 +126,6 @@ export const CustomTable: React.FC<CustomTableProps> = ({ setting, onChange }): 
 					</TableBody>
 				</Table>
 			</TableContainer>
-			<Spacer text={_('Tabelle 2')} />
 		</React.Fragment>
 	);
 };

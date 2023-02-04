@@ -4,7 +4,7 @@ import theme from '@iobroker/adapter-react-v5/Theme';
 import { ThemeProvider } from '@mui/material/styles';
 // import from iobroker-react docu page => https://github.com/AlCalzone/iobroker-react
 import { SettingsApp } from 'iobroker-react/app';
-import { useSettings } from 'iobroker-react/hooks';
+import { useIoBrokerObject,useSettings } from 'iobroker-react/hooks';
 import type { Translations } from 'iobroker-react/i18n';
 import React, { useState } from 'react';
 import ReactDOM from 'react-dom';
@@ -29,17 +29,12 @@ const SettingsPageContent: React.FC = React.memo(() => {
 			[option]: value,
 		}));
 	};
-	const [ip, setIp] = useState<string>('');
-
+	const [systemConfigObj] = useIoBrokerObject('system.config');
+	const secret = systemConfigObj?.native?.secret;
 	return (
 		<React.Fragment>
-			<Logo
-				classes={{
-					logo: 'logo',
-				}}
-			/>
-
-			<SettingPage settings={settings} onChange={(option, value) => handleChange(option, value)} />
+			<Logo />
+			<SettingPage secret={secret} settings={settings} onChange={(option, value) => handleChange(option, value)} />
 		</React.Fragment>
 	);
 });
@@ -47,8 +42,8 @@ const SettingsPageContent: React.FC = React.memo(() => {
 const migrateSettings = (settings: ioBroker.AdapterConfig) => {
 	// Here's an example for editing settings after they are loaded from the backend
 	// In this case, option1 will be set to true by default
-	if (settings.option1 === undefined) {
-		settings.option1 = true;
+	if (settings.customGCodeCommands === undefined) {
+		settings.customGCodeCommands = []
 	}
 };
 

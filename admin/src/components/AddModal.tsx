@@ -1,5 +1,5 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from '@mui/material';
-import { useConnection, useDialogs, useGlobals, useI18n } from 'iobroker-react/hooks';
+import { useConnection, useGlobals, useI18n } from 'iobroker-react/hooks';
 import React, { useState } from 'react';
 import { AddTableDialog, Row } from './AddTableDialog';
 import { Edit } from '@mui/icons-material';
@@ -19,12 +19,16 @@ export const AddModal: React.FC<AddModalProps> = ({ newRow, index, mode, editRow
 	const { translate: _ } = useI18n();
 	const connection = useConnection();
 	const { namespace } = useGlobals();
-	const { showSelectId } = useDialogs();
+	const [selectOptions, setSelectOptions] = useState<string[]>();
 
-	const invokeCommand = React.useCallback(async () => {
-		const result = await connection.sendTo(namespace, 'doSomething', {});
+	const getPrinterList = React.useCallback(async () => {
+		const result = await connection.sendTo(namespace, 'getPrinterList', ['getPrinterList']);
 		if (!result) console.error('Nope!');
-		console.log('invokeCommand');
+		console.log('result', result);
+
+		// set the select options to the printer list
+		setSelectOptions(result);
+		console.log('options', result);
 	}, [connection, namespace]);
 
 	const handleClickAdd = (): void => {
@@ -41,10 +45,9 @@ export const AddModal: React.FC<AddModalProps> = ({ newRow, index, mode, editRow
 		setOpen(false);
 	};
 
-	const handleClickOpen = (): void => {
+	const handleClickOpen = async (): Promise<void> => {
 		setOpen(true);
-		// const test = await invokeCommand();
-		// // console.log(test);
+		await getPrinterList();
 	};
 
 	const handleClose = (): void => {
@@ -55,17 +58,7 @@ export const AddModal: React.FC<AddModalProps> = ({ newRow, index, mode, editRow
 		<React.Fragment>
 			{mode === 'add' ? (
 				<React.Fragment>
-					<Button
-						variant="contained"
-						size="medium"
-						color={'primary'}
-						onClick={handleClickOpen}
-						sx={{
-							'&:hover': {
-								backgroundColor: '#3f51b5',
-							},
-						}}
-					>
+					<Button variant="contained" size="medium" color={'primary'} onClick={handleClickOpen}>
 						{_('add')}
 					</Button>
 					<Dialog open={open} onClose={handleClose}>
@@ -75,7 +68,7 @@ export const AddModal: React.FC<AddModalProps> = ({ newRow, index, mode, editRow
 								fontSize: '1.4rem',
 							}}
 						>
-							{_('new Table Row')}
+							{_('Add custom command')}
 						</DialogTitle>
 						<DialogContent
 							sx={{
@@ -85,7 +78,7 @@ export const AddModal: React.FC<AddModalProps> = ({ newRow, index, mode, editRow
 								justifyContent: 'center',
 							}}
 						>
-							<AddTableDialog newRow={(value) => setRow(value)} mode={'add'} />
+							<AddTableDialog newRow={(value) => setRow(value)} mode={'add'} options={selectOptions} />
 						</DialogContent>
 						<DialogActions>
 							<Button onClick={handleClickAdd}>{_('add')}</Button>
@@ -115,7 +108,12 @@ export const AddModal: React.FC<AddModalProps> = ({ newRow, index, mode, editRow
 								justifyContent: 'center',
 							}}
 						>
-							<AddTableDialog newRow={(value) => setRowEdit(value)} oldRow={oldRow} mode={'edit'} />
+							<AddTableDialog
+								newRow={(value) => setRowEdit(value)}
+								oldRow={oldRow}
+								mode={'edit'}
+								options={selectOptions}
+							/>
 						</DialogContent>
 						<DialogActions>
 							<Button onClick={handleClickEdit}>{_('edit')}</Button>
