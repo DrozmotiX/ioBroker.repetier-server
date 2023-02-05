@@ -6,10 +6,10 @@ import { ThemeProvider } from '@mui/material/styles';
 import { SettingsApp } from 'iobroker-react/app';
 import { useIoBrokerObject,useSettings } from 'iobroker-react/hooks';
 import type { Translations } from 'iobroker-react/i18n';
-import React from 'react';
+import React, { useState } from 'react';
 import ReactDOM from 'react-dom';
 import { SettingPage } from './SettingPage';
-import { Logo } from "iobroker-react";
+import { Logo } from 'iobroker-react';
 // Components are imported here
 
 const themeName = Utils.getThemeName();
@@ -65,7 +65,7 @@ const translations: Translations = {
 const Root: React.FC = () => {
 	return (
 		<ThemeProvider theme={theme(themeName)}>
-			<SettingsApp name="my-adapter" afterLoad={migrateSettings} translations={translations}>
+			<SettingsApp name="repetier-server" afterLoad={migrateSettings} translations={translations}>
 				<SettingsPageContent />
 			</SettingsApp>
 		</ThemeProvider>

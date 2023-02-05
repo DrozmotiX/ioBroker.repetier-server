@@ -24,11 +24,8 @@ export const AddModal: React.FC<AddModalProps> = ({ newRow, index, mode, editRow
 	const getPrinterList = React.useCallback(async () => {
 		const result = await connection.sendTo(namespace, 'getPrinterList', ['getPrinterList']);
 		if (!result) console.error('Nope!');
-		console.log('result', result);
 
-		// set the select options to the printer list
 		setSelectOptions(result);
-		console.log('options', result);
 	}, [connection, namespace]);
 
 	const handleClickAdd = (): void => {
@@ -78,7 +75,7 @@ export const AddModal: React.FC<AddModalProps> = ({ newRow, index, mode, editRow
 								justifyContent: 'center',
 							}}
 						>
-							<AddTableDialog newRow={(value) => setRow(value)} mode={'add'} options={selectOptions} />
+							<AddTableDialog newRow={(value) => setRow(value)} options={selectOptions} />
 						</DialogContent>
 						<DialogActions>
 							<Button onClick={handleClickAdd}>{_('add')}</Button>
@@ -111,7 +108,6 @@ export const AddModal: React.FC<AddModalProps> = ({ newRow, index, mode, editRow
 							<AddTableDialog
 								newRow={(value) => setRowEdit(value)}
 								oldRow={oldRow}
-								mode={'edit'}
 								options={selectOptions}
 							/>
 						</DialogContent>
