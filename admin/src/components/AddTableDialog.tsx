@@ -2,20 +2,21 @@
  * Created by issi on 31.10.21
  */
 import {
+	Box,
+	Checkbox,
 	FormControl,
 	Grid,
 	InputLabel,
+	ListItemText,
 	MenuItem,
 	OutlinedInput,
 	Select,
 	SelectChangeEvent,
-	ListItemText,
-	Checkbox,
 	TextField,
-	Box,
 } from '@mui/material';
 import { useI18n } from 'iobroker-react/hooks';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
+
 export interface Row {
 	select: string[];
 	value: string;
@@ -26,8 +27,7 @@ export interface Row {
 
 export interface RowProps {
 	newRow?: (value: Row) => void;
-	oldRow?: Row | undefined;
-	mode: 'add' | 'edit';
+	oldRow?: Row;
 	options: string[] | undefined;
 }
 
@@ -42,19 +42,11 @@ const MenuProps = {
 	},
 };
 
-export const AddTableDialog: React.FC<RowProps> = ({ mode, newRow, oldRow, options }): JSX.Element => {
+export const AddTableDialog: React.FC<RowProps> = ({ newRow, oldRow, options }): JSX.Element => {
 	if (!options) {
 		options = [];
 	}
-
 	const { translate: _ } = useI18n();
-	const [row, setRow] = useState<Row>({
-		select: ['all'],
-		value: '',
-		type: false,
-		command: '',
-		desc: '',
-	});
 	const [select, setSelect] = React.useState<string[]>(['all']);
 	const [type, setType] = React.useState<string>('false');
 	const [value, setValue] = React.useState<string>('');
@@ -64,12 +56,17 @@ export const AddTableDialog: React.FC<RowProps> = ({ mode, newRow, oldRow, optio
 
 	useEffect(() => {
 		if (newRow) {
-			if (row.type) {
-				row.value = '';
-			}
-			newRow(row);
+			const newObj = { select: ['all'], value: '', type: false, command: '', desc: '' };
+			newObj.select = select;
+			newObj.value = value;
+			newObj.type = JSON.parse(type);
+			newObj.command = command;
+			newObj.desc = desc;
+			newRow(newObj);
+		} else {
+			console.warn('newRow undefined');
 		}
-	}, [row]);
+	}, [type, value, command, desc, select]);
 
 	useEffect(() => {
 		if (oldRow) {
@@ -98,56 +95,39 @@ export const AddTableDialog: React.FC<RowProps> = ({ mode, newRow, oldRow, optio
 				if (value[0] == 'all') {
 					value = value.filter((v) => v !== 'all');
 				} else if (value[value.length - 1] === 'all') {
-					// wenn ja, dann setze alle werte aus dem options array
 					value = ['all'];
 				}
-				if (mode === 'edit') setRow({ ...oldRow, select: value } as Row);
-				if (mode === 'add') setRow({ ...row, select: value });
 				setSelect(value);
 			} else {
-				if (mode === 'edit') setRow({ ...oldRow, select: value } as Row);
-				if (mode === 'add') setRow({ ...row, select: value });
 				setSelect(value);
 			}
 		}
 	};
 
 	const handleChangeType = (event: SelectChangeEvent) => {
-		//ToDO: Reset value if set to false
 		const type = JSON.parse(event.target.value);
-
 		if (type) {
 			console.log('true');
 			setShowValue(false);
-			if (mode === 'edit') setRow({ ...oldRow, value: '', type: type } as Row);
-			if (mode === 'add') setRow({ ...row, value: '', type: type });
 			setValue('');
 			setType(event.target.value);
-			// if (mode === 'edit') setRow({ ...oldRow, type: type } as Row);
-			// if (mode === 'add') setRow({ ...row, type: type });
 		} else {
 			setShowValue(true);
 			console.log('false');
 			setType(event.target.value);
-			if (mode === 'edit') setRow({ ...oldRow, type: type } as Row);
-			if (mode === 'add') setRow({ ...row, type: type });
 		}
 	};
 
 	const handleChangeValue = (event) => {
 		setValue(event.target.value);
-		if (mode === 'edit') setRow({ ...oldRow, value: event.target.value } as Row);
-		if (mode === 'add') setRow({ ...row, value: event.target.value });
 	};
+
 	const handleChangeCommand = (event) => {
 		setCommand(event.target.value);
-		if (mode === 'edit') setRow({ ...oldRow, command: event.target.value } as Row);
-		if (mode === 'add') setRow({ ...row, command: event.target.value });
 	};
+
 	const handleChangeDesc = (event) => {
 		setDesc(event.target.value);
-		if (mode === 'edit') setRow({ ...oldRow, desc: event.target.value } as Row);
-		if (mode === 'add') setRow({ ...row, desc: event.target.value });
 	};
 
 	return (

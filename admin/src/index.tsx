@@ -4,12 +4,12 @@ import theme from '@iobroker/adapter-react-v5/Theme';
 import { ThemeProvider } from '@mui/material/styles';
 // import from iobroker-react docu page => https://github.com/AlCalzone/iobroker-react
 import { SettingsApp } from 'iobroker-react/app';
-import { useIoBrokerObject,useSettings } from 'iobroker-react/hooks';
+import { useIoBrokerObject, useSettings } from 'iobroker-react/hooks';
 import type { Translations } from 'iobroker-react/i18n';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { SettingPage } from './SettingPage';
-import { Logo } from "iobroker-react";
+import { SettingsHeader } from 'iobroker-react';
 // Components are imported here
 
 const themeName = Utils.getThemeName();
@@ -33,8 +33,12 @@ const SettingsPageContent: React.FC = React.memo(() => {
 	const secret = systemConfigObj?.native?.secret;
 	return (
 		<React.Fragment>
-			<Logo />
-			<SettingPage secret={secret} settings={settings} onChange={(option, value) => handleChange(option, value)} />
+			<SettingsHeader />
+			<SettingPage
+				secret={secret}
+				settings={settings}
+				onChange={(option, value) => handleChange(option, value)}
+			/>
 		</React.Fragment>
 	);
 });
@@ -43,7 +47,7 @@ const migrateSettings = (settings: ioBroker.AdapterConfig) => {
 	// Here's an example for editing settings after they are loaded from the backend
 	// In this case, option1 will be set to true by default
 	if (settings.customGCodeCommands === undefined) {
-		settings.customGCodeCommands = []
+		settings.customGCodeCommands = [];
 	}
 };
 
@@ -65,7 +69,7 @@ const translations: Translations = {
 const Root: React.FC = () => {
 	return (
 		<ThemeProvider theme={theme(themeName)}>
-			<SettingsApp name="my-adapter" afterLoad={migrateSettings} translations={translations}>
+			<SettingsApp name="repetier-server" afterLoad={migrateSettings} translations={translations}>
 				<SettingsPageContent />
 			</SettingsApp>
 		</ThemeProvider>
