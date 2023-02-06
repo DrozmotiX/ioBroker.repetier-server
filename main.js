@@ -16,6 +16,7 @@ const wsConnection = {
 	connectionNeeded : true
 };
 const printers = [];
+const repServerConfig = {};
 
 // Load your modules here, e.g.:
 // const fs = require("fs");
@@ -44,6 +45,10 @@ class RepetierServer extends utils.Adapter {
 
 		// Reset the connection indicator during startup
 		this.setState('info.connection', false, true);
+
+		repServerConfig.ip = this.config.ip;
+		repServerConfig.apiKey = this.decrypt(this.config.token);
+		repServerConfig.port = this.config.port;
 
 		await this.localeStateSetCreate('sendMessage', 'Send Custom Message', '');
 
@@ -97,7 +102,7 @@ class RepetierServer extends utils.Adapter {
 	async webSocketHandler(){
 
 		try {
-			ws = new WebSocket(`ws://192.168.130.235:3344/socket`);
+			ws = new WebSocket(`ws://${repServerConfig.ip}:${repServerConfig.port}/socket`);
 
 			// Handle messages received from socket connection
 			ws.on('message', async (data) => {

@@ -74,6 +74,7 @@
 	},
 	"native": {
 		"ip": "",
+		"port": 3344,
 		"token": "",
 		"customGCodeCommands" : []
 	},

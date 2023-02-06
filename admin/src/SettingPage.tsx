@@ -2,7 +2,7 @@ import { useI18n } from 'iobroker-react/hooks';
 import React from 'react';
 import { CustomTable } from './CustomTable';
 import { Grid, FormControl } from '@mui/material';
-import { IpAddressInput, PasswordInput } from 'iobroker-react';
+import { IpAddressInput, NumberInput, PasswordInput } from 'iobroker-react';
 import { decrypt, encrypt } from 'iobroker-react/lib/shared/tools';
 
 interface SettingPageProps {
@@ -16,6 +16,10 @@ export const SettingPage: React.FC<SettingPageProps> = ({ secret, onChange, sett
 
 	const handleChangeIP = (value) => {
 		onChange('ip', value);
+	};
+
+	const handleChangePort = (value) => {
+		onChange('port', value);
 	};
 
 	const handleChangeToken = (value) => {
@@ -48,6 +52,10 @@ export const SettingPage: React.FC<SettingPageProps> = ({ secret, onChange, sett
 			>
 				<FormControl variant="standard" sx={{ m: 1, minWidth: 120, width: '250px' }}>
 					<IpAddressInput label={_('ip')} value={settings.ip} onChange={handleChangeIP} />
+				</FormControl>
+
+				<FormControl variant="standard" sx={{ m: 1, minWidth: 120, width: '250px' }}>
+					<NumberInput label={_('port')} value={settings.port} onChange={handleChangePort} />
 				</FormControl>
 
 				<PasswordInput
