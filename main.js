@@ -255,7 +255,7 @@ class RepetierServer extends utils.Adapter {
 			if (printers[printer] == null) printers.push(dataObject[printer].slug);
 
 			// Create folder root structure
-			await this.customStates(dataObject[printer].slug);
+			// await this.customStates(dataObject[printer].slug);
 			await this.localExtendObject(dataObject[printer].slug, 'device', printer);
 			await this.localExtendObject(`${dataObject[printer].slug}.commands`, 'channel', `Printer commands`);
 
