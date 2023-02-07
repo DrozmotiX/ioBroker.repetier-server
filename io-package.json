@@ -1,7 +1,7 @@
 {
 	"common": {
 		"name": "repetier-server",
-		"version": "0.0.5",
+		"version": "0.0.6",
 		"news": {
 			"0.0.1": {
 				"en": "initial release",
@@ -73,7 +73,7 @@
 		]
 	},
 	"native": {
-		"ip": "",
+		"ip": "192.168.1.50",
 		"port": 3344,
 		"token": "",
 		"customGCodeCommands" : []
