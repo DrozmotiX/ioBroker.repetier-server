@@ -292,15 +292,15 @@ class RepetierServer extends utils.Adapter {
 
 				for (const tempStates in data.data[device].data){
 
-					await this.localExtendObject(`${data.data[device].printer}.temperatures.extruder`, 'channel', data.data[device].printer);
 					let channelNR = data.data[device].data.id;
-					let temptype = 'extruder';
-					// Recalulcate bed sensore number starting from 1
+					let temptype = 'Extruder';
+					// Recalculate bed sensor number starting from 1
 					if (channelNR >= 1000) {
 						channelNR = 1000 - data.data[device].data.id;
-						temptype = 'bed';
+						temptype = 'Bed';
 					}
 
+					await this.localExtendObject(`${data.data[device].printer}.temperatures.${temptype}`, 'channel', `${temptype} Temperatures`);
 					await this.localExtendObject(`${data.data[device].printer}.temperatures.${temptype}.${channelNR}`, 'channel', `Sensor ${channelNR}`);
 					await this.localeStateSetCreate(`${data.data[device].printer}.temperatures.${temptype}.${channelNR}.${tempStates}`, tempStates, data.data[device].data[tempStates]);
 				}
@@ -366,6 +366,8 @@ class RepetierServer extends utils.Adapter {
 
 	/**
 	 * State create and value update handler
+	/**
+	 * Generic function to create states & write value updates
 	 * @param {string} stateName ID of state to create
 	 * @param {string} name Name of object
 	 * @param {object} value Value
