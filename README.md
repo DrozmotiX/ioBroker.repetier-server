@@ -33,7 +33,7 @@ You are almost done, only a few steps left:
 	### **WORK IN PROGRESS**
 -->
 
-### **WORK IN PROGRESS**
+### **WORK IN PROGRESS** - Repetier-Server Adapter First Beta release for Public testing
 * (DutchmanNL) initial release
 
 ## License
