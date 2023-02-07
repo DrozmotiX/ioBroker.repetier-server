@@ -10,11 +10,11 @@ const utils = require('@iobroker/adapter-core');
 const WebSocket = require('ws'); // Lib to handle Websocket
 let ws;
 const stateDef = require('./lib/stateDef.js'); // Load attribute library
-const warnMessages = {}; // Array containing sentry messages
+const warnMessages = {}; // Array containing warn messages to avoid duplicates
 const wsConnection = {
 	connectionActive : false,
 	connectionNeeded : true
-};
+}; // Array containing websocket connection data
 const printers = [];
 const repServerConfig = {};
 
@@ -46,16 +46,16 @@ class RepetierServer extends utils.Adapter {
 		// Reset the connection indicator during startup
 		this.setState('info.connection', false, true);
 
+		// Read configuration from config
 		repServerConfig.ip = this.config.ip;
 		repServerConfig.apiKey = this.decrypt(this.config.token);
 		repServerConfig.port = this.config.port;
 
+		//ToDo: Consider to have this as option for advance mode only
+		// Create State on root level to send custom messages
 		await this.localeStateSetCreate('sendMessage', 'Send Custom Message', '');
 
-		//ToDo: Consider to have this as option for advance mode only
-		// Create and listen to state to send messags
-		this.subscribeStates(`sendMessage`);
-		// Start connection handler
+		// Start connection handler to created & monitor websocket connection
 		await this.connectionHandler();
 		this.setState('info.connection', true, true);
 	}
@@ -69,6 +69,7 @@ class RepetierServer extends utils.Adapter {
 
 		// Start websocket connection if required but not active
 		if (wsConnection.connectionNeeded && !wsConnection.connectionActive) {
+			// Consider writing message only 1 time if connection fails at first attempt
 			this.log.info('Trying to connect to websocket');
 			await this.webSocketHandler();
 		} else if (wsConnection.connectionNeeded && wsConnection.connectionActive){ // If connection is active, request value updates for defined functions
@@ -80,8 +81,8 @@ class RepetierServer extends utils.Adapter {
 				'data': {},
 				'callback_id': 800
 			};
-			// Send message to websocket connection
 
+			// Send message to websocket connection
 			ws.send(JSON.stringify(messageArray));
 
 			// Request state updates for values not updated by live websocket feed (like time left & % of print)
@@ -102,32 +103,9 @@ class RepetierServer extends utils.Adapter {
 	async webSocketHandler(){
 
 		try {
+
+			// Open websocket connection
 			ws = new WebSocket(`ws://${repServerConfig.ip}:${repServerConfig.port}/socket`);
-
-			// Handle messages received from socket connection
-			ws.on('message', async (data) => {
-				wsConnection.connectionActive = true;
-				const messageObject = JSON.parse(data.toString());
-				console.log(`[Callback ID] ${messageObject.callback_id}`);
-				if (messageObject.callback_id != '-1') {
-					if (messageObject.callback_id == null){
-						console.error(`undefined found`);
-					}
-					this.log.debug(`${JSON.stringify(messageObject)}`);
-					if (messageObject.callback_id == '900') {
-						await this.updatePrinterValues(messageObject);
-					}
-				} else {
-					this.log.debug(`${JSON.stringify(messageObject)}`);
-					await this.updateTemperatures(messageObject);
-				}
-			});
-
-			// Event if connection is closed, show warning if noe expected
-			ws.on('close', () => {
-				wsConnection.connectionActive = false;
-				if (wsConnection.connectionNeeded === true)	this.log.warn(`Connection with Repetier Server closed, will try to reconnect`);
-			});
 
 			// Event if connection is opened
 			ws.on('open', () => {
@@ -137,10 +115,46 @@ class RepetierServer extends utils.Adapter {
 				this.requestData(`getPrinterInfo`);
 			});
 
+			// Event if connection is closed, show warning if noe expected
+			ws.on('close', () => {
+				// Confirm inactive connection to memory
+				wsConnection.connectionActive = false;
+				// Avoid log message if connection is closed at adapter stop
+				if (wsConnection.connectionNeeded === true)	this.log.warn(`Connection with Repetier Server closed, will try to reconnect`);
+			});
+
 			// Handle errors on socket connection
 			ws.on('error', (error) => {
 				this.log.error(error);
 			});
+
+			// Handle messages received from socket connection
+			ws.on('message', async (data) => {
+				// Confirm active connection to memory
+				wsConnection.connectionActive = true;
+				const messageObject = JSON.parse(data.toString());
+				console.log(`[Callback ID] ${messageObject.callback_id}`);
+
+				// Message id possibilities
+				// -1 : Regular message by Repetier Server
+				// 545 : Response to custom command
+				// 800 : Response to "Keep alive ping"
+				// 900 : List all printers and values
+				if (messageObject.callback_id != '-1') {
+					if (messageObject.callback_id == null){
+						console.error(`undefined found`);
+					}
+					this.log.debug(`${JSON.stringify(messageObject)}`);
+					if (messageObject.callback_id == '900') {
+						await this.updatePrinterValues(messageObject);
+					}
+				} else {
+					//ToDo: Seperate between unknown messages and event type = temperature
+					this.log.debug(`${JSON.stringify(messageObject)}`);
+					await this.updateTemperatures(messageObject);
+				}
+			});
+
 		} catch (e) {
 			this.log.error(`[ webSocketHandler ] ${e}`);
 		}
@@ -163,7 +177,7 @@ class RepetierServer extends utils.Adapter {
 			// Close web socket if connected
 			if (wsConnection.connectionNeeded || wsConnection.connectionActive){
 				wsConnection.connectionNeeded = false;
-				wsConnection.connectionActive;
+				wsConnection.connectionActive = false;
 				ws.close();
 				this.log.info(`Connection to Repetier Server closed`);
 			}
@@ -191,6 +205,7 @@ class RepetierServer extends utils.Adapter {
 			// Send gcode Command to specific printer
 			if (id === `${this.namespace}.${printer[2]}.commands.send-gCode-Command` && state.val){
 
+				// Prepare message to send g-code command
 				const commandData = {
 					'action': 'send',
 					'data': {
@@ -199,9 +214,10 @@ class RepetierServer extends utils.Adapter {
 					'printer': printer[2],
 					'callback_id': 545
 				};
+				// Send message to websocket
 				ws.send(JSON.stringify(commandData));
 
-				// Handle message object see https://www.repetier-server.com/manuals/programming/API/index.html
+				// Handle custom message, see https://www.repetier-server.com/manuals/programming/API/index.html
 			} else if (id === `${this.namespace}.sendMessage`){
 				ws.send(JSON.stringify(state.val));
 			}
@@ -212,7 +228,7 @@ class RepetierServer extends utils.Adapter {
 	}
 
 	/**
-	 * Request data from websocket
+	 * Request data from Repetier Server
 	 */
 	requestData(requestType){
 
@@ -228,7 +244,8 @@ class RepetierServer extends utils.Adapter {
 	}
 
 	/**
-	 * Handle state updates receive from websocket
+	 * Handle state updates received from websocket
+	 * {boolean} ini If function call needs to initialize device
 	 */
 	async updatePrinterValues(data){
 		// console.log(JSON.stringify(data));
@@ -237,24 +254,26 @@ class RepetierServer extends utils.Adapter {
 		for (const printer in dataObject){
 			if (printers[printer] == null) printers.push(dataObject[printer].slug);
 
+			// Create folder root structure
+			await this.customStates(dataObject[printer].slug);
 			await this.localExtendObject(dataObject[printer].slug, 'device', printer);
-
 			await this.localExtendObject(`${dataObject[printer].slug}.commands`, 'channel', `Printer commands`);
 
+			// Create state for custom g-code command
 			await this.localeStateSetCreate(`${dataObject[printer].slug}.commands.send-gCode-Command`, 'send gCode Command (M256 B0)', '');
 
-			// }
-
+			// Create state for each value
 			for (const printerState in dataObject[printer]){
 				let stateValue = dataObject[printer][printerState];
+
+				// Recalculate epoch time to Human Readable format for time values
 				if (printerState === 'start' || printerState === 'printTime'|| printerState === 'printStart' || printerState === 'printedTimeComp') stateValue = this.reCalcSeconds(stateValue);
 
 				await this.localeStateSetCreate(`${dataObject[printer].slug}.${printerState}`, printerState, stateValue);
 			}
 
+			// Calculate remaining print time
 			const calculatedTimeRemaining = this.reCalcSeconds(dataObject[printer].printTime - dataObject[printer].printedTimeComp);
-			this.setState(`${dataObject[printer].slug}.printTimeRemaining`, {val: calculatedTimeRemaining, ack: true });
-
 			await this.localeStateSetCreate(`${dataObject[printer].slug}.printTimeRemaining`, 'Remaining Print time', calculatedTimeRemaining);
 
 		}
@@ -265,39 +284,29 @@ class RepetierServer extends utils.Adapter {
 
 		// Handle all data content
 		for (const device in data.data){
-			// console.log(data.data[device]);
+
 			if (data.data[device].event === `temp`){ // Verify if message contains updates for temperatures
 
+				// Create root structure
 				await this.localExtendObject(`${data.data[device].printer}.temperatures`, 'channel', data.data[device].printer);
 
 				for (const tempStates in data.data[device].data){
 
 					await this.localExtendObject(`${data.data[device].printer}.temperatures.extruder`, 'channel', data.data[device].printer);
-
-					if (data.data[device].data.id < 1000) {
-
-						await this.localExtendObject(`${data.data[device].printer}.temperatures.extruder.${data.data[device].data.id}`, 'channel',  `Extruder channel ${data.data[device].data.id}`);
-
-						await this.localeStateSetCreate(`${data.data[device].printer}.temperatures.extruder.${data.data[device].data.id}.${tempStates}`, tempStates, data.data[device].data[tempStates]);
-
-					} else {
-
-						// Use recognisable channel ID for bed
-
-						const channelNR = 1000 - data.data[device].data.id;
-
-						await this.localExtendObject(`${data.data[device].printer}.temperatures.bed.${channelNR}`, 'channel', `Extruder channel ${channelNR}`);
-
-						await this.localeStateSetCreate(`${data.data[device].printer}.temperatures.bed.${channelNR}.${tempStates}`, tempStates, data.data[device].data[tempStates]);
+					let channelNR = data.data[device].data.id;
+					let temptype = 'extruder';
+					// Recalulcate bed sensore number starting from 1
+					if (channelNR >= 1000) {
+						channelNR = 1000 - data.data[device].data.id;
+						temptype = 'bed';
 					}
 
+					await this.localExtendObject(`${data.data[device].printer}.temperatures.${temptype}.${channelNR}`, 'channel', `Sensor ${channelNR}`);
+					await this.localeStateSetCreate(`${data.data[device].printer}.temperatures.${temptype}.${channelNR}.${tempStates}`, tempStates, data.data[device].data[tempStates]);
 				}
 
 			}
 		}
-
-		// Identity if received values are temperature related
-
 	}
 
 	reCalcSeconds(allSeconds){
@@ -317,11 +326,11 @@ class RepetierServer extends utils.Adapter {
 				case 'getPrinterList':
 					if (obj.callback) {
 
+						// Return array of all printer including option all
 						const printerSelect = ['all'];
 						for (const printer in printers) {
 							printerSelect.push(printers[printer]);
 						}
-
 						this.sendTo(obj.from, obj.command, printerSelect, obj.callback);
 					}
 					break;
@@ -331,7 +340,7 @@ class RepetierServer extends utils.Adapter {
 	}
 
 	/**
-	 * Create root objects
+	 * Generic function to create objects
 	 * @param {string} id
 	 * @param {'channel' | 'device'} type
 	 * @param {string} name
@@ -370,24 +379,25 @@ class RepetierServer extends utils.Adapter {
 			const common = {};
 			if (!stateDef[name]) {
 				const warnMessage = `State attribute definition missing for : ${name}`;
-				if (warnMessages[name] !== warnMessage) {
-					this.log.warn(`State attribute definition missing for : ${name} with value : ${value}`);
+				if (warnMessages[stateName] !== warnMessage) {
+					warnMessages[stateName] = warnMessage;
+					console.info(`No specific state attributes assigned for : ${name} with value : ${value}`);
 				}
 			}
 
-			if (stateDef[name] !== null && stateDef[name].min !== null){
+			if (stateDef[name] != null && stateDef[name].min != null){
 				common.min = stateDef[name].min;
 			}
-			if (stateDef[name] !== null && stateDef[name].max !== null){
+			if (stateDef[name] != null && stateDef[name].max != null){
 				common.max = stateDef[name].max;
 			}
 
-			common.name = stateDef[name] !== undefined ? stateDef[name].name || name : name;
-			common.type = stateDef[name] !== undefined ? stateDef[name].type || typeof (value) : typeof (value) ;
-			common.role = stateDef[name] !== undefined ? stateDef[name].role || 'state' : 'state';
+			common.name = stateDef[name] != null ? stateDef[name].name || name : name;
+			common.type = stateDef[name] != null ? stateDef[name].type || typeof (value) : typeof (value) ;
+			common.role = stateDef[name] != null ? stateDef[name].role || 'state' : 'state';
 			common.read = true;
-			common.unit = stateDef[name] !== undefined ? stateDef[name].unit || '' : '';
-			common.write = stateDef[name] !== undefined ? stateDef[name].write || false : false;
+			common.unit = stateDef[name] != null ? stateDef[name].unit || '' : '';
+			common.write = stateDef[name] != null ? stateDef[name].write || false : false;
 
 			if ((!this.createdStatesDetails[stateName])
 				|| (this.createdStatesDetails[stateName]
