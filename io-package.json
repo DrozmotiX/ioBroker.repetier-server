@@ -1,105 +1,125 @@
 {
-	"common": {
-		"name": "repetier-server",
-		"version": "0.0.6",
-		"news": {
-			"0.0.1": {
-				"en": "initial release",
-				"de": "Erstveröffentlichung",
-				"ru": "Начальная версия",
-				"pt": "lançamento inicial",
-				"nl": "Eerste uitgave",
-				"fr": "Première version",
-				"it": "Versione iniziale",
-				"es": "Versión inicial",
-				"pl": "Pierwsze wydanie",
-				"zh-cn": "首次出版"
-			}
-		},
-		"title": "Repetier Server",
-		"titleLang": {
-			"en": "Repetier Server",
-			"de": "Repetier-Server",
-			"ru": "Репетиционный сервер",
-			"pt": "Servidor Repetidor",
-			"nl": "Repetier-server",
-			"fr": "Serveur répétiteur",
-			"it": "Server ripetitore",
-			"es": "Servidor repetidor",
-			"pl": "Serwer repetytorów",
-			"zh-cn": "重复服务器"
-		},
-		"desc": {
-			"en": "repetier-server",
-			"de": "Repeater-Server",
-			"ru": "репетитор-сервер",
-			"pt": "servidor repetidor",
-			"nl": "repetier-server",
-			"fr": "répétiteur-serveur",
-			"it": "ripetitore-server",
-			"es": "servidor repetidor",
-			"pl": "serwer repetytorów",
-			"zh-cn": "重复服务器"
-		},
-		"authors": ["DutchmanNL <oss@DrozmotiX.eu>"],
-		"keywords": ["ioBroker", "template", "Smart Home", "home automation"],
-		"license": "MIT",
-		"platform": "Javascript/Node.js",
-		"main": "main.js",
-		"icon": "repetier-server.png",
-		"enabled": true,
-		"extIcon": "https://raw.githubusercontent.com/DrozmotiX/ioBroker.repetier-server/main/admin/repetier-server.png",
-		"readme": "https://github.com/DrozmotiX/ioBroker.repetier-server/blob/main/README.md",
-		"loglevel": "info",
-		"mode": "daemon",
-		"type": "communication",
-		"compact": true,
-		"connectionType": "local",
-		"dataSource": "push",
-		"messagebox": true,
-		"adminUI": {
-			"config": "materialize"
-		},
-		"eraseOnUpload": true,
-		"dependencies": [
-			{
-				"js-controller": ">=3.3.22"
-			}
-		],
-		"globalDependencies": [
-			{
-				"admin": ">=5.0.0"
-			}
-		]
-	},
-	"native": {
-		"ip": "192.168.1.50",
-		"port": 3344,
-		"token": "",
-		"customGCodeCommands" : []
-	},
-	"objects": [],
-	"instanceObjects": [
-		{
-			"_id": "info",
-			"type": "channel",
-			"common": {
-				"name": "Information"
-			},
-			"native": {}
-		},
-		{
-			"_id": "info.connection",
-			"type": "state",
-			"common": {
-				"role": "indicator.connected",
-				"name": "Device or service connected",
-				"type": "boolean",
-				"read": true,
-				"write": false,
-				"def": false
-			},
-			"native": {}
-		}
-	]
+  "common": {
+    "name": "repetier-server",
+    "version": "0.1.0",
+    "news": {
+      "0.1.0": {
+        "en": "initial release",
+        "de": "erstausstrahlung",
+        "ru": "начальный выпуск",
+        "pt": "lançamento inicial",
+        "nl": "niet",
+        "fr": "initial release",
+        "it": "rilascio iniziale",
+        "es": "liberación inicial",
+        "pl": "pierwsze wydanie",
+        "uk": "початковий реліз",
+        "zh-cn": "初步释放"
+      },
+      "0.0.1": {
+        "en": "initial release",
+        "de": "Erstveröffentlichung",
+        "ru": "Начальная версия",
+        "pt": "lançamento inicial",
+        "nl": "Eerste uitgave",
+        "fr": "Première version",
+        "it": "Versione iniziale",
+        "es": "Versión inicial",
+        "pl": "Pierwsze wydanie",
+        "zh-cn": "首次出版"
+      }
+    },
+    "title": "Repetier Server",
+    "titleLang": {
+      "en": "Repetier Server",
+      "de": "Repetier-Server",
+      "ru": "Репетиционный сервер",
+      "pt": "Servidor Repetidor",
+      "nl": "Repetier-server",
+      "fr": "Serveur répétiteur",
+      "it": "Server ripetitore",
+      "es": "Servidor repetidor",
+      "pl": "Serwer repetytorów",
+      "zh-cn": "重复服务器"
+    },
+    "desc": {
+      "en": "repetier-server",
+      "de": "Repeater-Server",
+      "ru": "репетитор-сервер",
+      "pt": "servidor repetidor",
+      "nl": "repetier-server",
+      "fr": "répétiteur-serveur",
+      "it": "ripetitore-server",
+      "es": "servidor repetidor",
+      "pl": "serwer repetytorów",
+      "zh-cn": "重复服务器"
+    },
+    "authors": [
+      "DutchmanNL <oss@DrozmotiX.eu>"
+    ],
+    "keywords": [
+      "ioBroker",
+      "template",
+      "Smart Home",
+      "home automation"
+    ],
+    "license": "MIT",
+    "platform": "Javascript/Node.js",
+    "main": "main.js",
+    "icon": "repetier-server.png",
+    "enabled": true,
+    "extIcon": "https://raw.githubusercontent.com/DrozmotiX/ioBroker.repetier-server/main/admin/repetier-server.png",
+    "readme": "https://github.com/DrozmotiX/ioBroker.repetier-server/blob/main/README.md",
+    "loglevel": "info",
+    "mode": "daemon",
+    "type": "communication",
+    "compact": true,
+    "connectionType": "local",
+    "dataSource": "push",
+    "messagebox": true,
+    "adminUI": {
+      "config": "materialize"
+    },
+    "eraseOnUpload": true,
+    "dependencies": [
+      {
+        "js-controller": ">=3.3.22"
+      }
+    ],
+    "globalDependencies": [
+      {
+        "admin": ">=5.0.0"
+      }
+    ]
+  },
+  "native": {
+    "ip": "192.168.1.50",
+    "port": 3344,
+    "token": "",
+    "customGCodeCommands": []
+  },
+  "objects": [],
+  "instanceObjects": [
+    {
+      "_id": "info",
+      "type": "channel",
+      "common": {
+        "name": "Information"
+      },
+      "native": {}
+    },
+    {
+      "_id": "info.connection",
+      "type": "state",
+      "common": {
+        "role": "indicator.connected",
+        "name": "Device or service connected",
+        "type": "boolean",
+        "read": true,
+        "write": false,
+        "def": false
+      },
+      "native": {}
+    }
+  ]
 }

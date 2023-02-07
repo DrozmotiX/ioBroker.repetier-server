@@ -32,8 +32,7 @@ You are almost done, only a few steps left:
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
-
-### **WORK IN PROGRESS** - Repetier-Server Adapter First Beta release for Public testing
+### 0.1.0 (2023-02-07) - Repetier-Server Adapter First Beta release for Public testing
 * (DutchmanNL) initial release
 
 ## License
