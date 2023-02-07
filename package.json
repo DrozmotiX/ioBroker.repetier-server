@@ -1,5 +1,5 @@
 {
-  "name": "iobroker.repetier-server",
+  "name": "@drozmotix/iobroker.repetier-server",
   "version": "0.1.0",
   "description": "repetier-server",
   "author": {

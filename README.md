@@ -1,8 +1,8 @@
 ![Logo](admin/repetier-server.png)
 # ioBroker.repetier-server
 
-[![NPM version](https://img.shields.io/npm/v/iobroker.repetier-server.svg)](https://www.npmjs.com/package/iobroker.repetier-server)
-[![Downloads](https://img.shields.io/npm/dm/iobroker.repetier-server.svg)](https://www.npmjs.com/package/iobroker.repetier-server)
+[![NPM version](https://img.shields.io/npm/v/@drozmotix/iobroker.repetier-server.svg)](https://www.npmjs.com/package/iobroker.repetier-server)
+[![Downloads](https://img.shields.io/npm/dm/@drozmotix/iobroker.repetier-server.svg)](https://www.npmjs.com/package/iobroker.repetier-server)
 ![Number of Installations](https://iobroker.live/badges/repetier-server-installed.svg)
 ![Current version in stable repository](https://iobroker.live/badges/repetier-server-stable.svg)
 
