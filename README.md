@@ -1,4 +1,5 @@
 ![Logo](admin/repetier-server.png)
+
 # ioBroker.repetier-server
 
 [![NPM version](https://img.shields.io/npm/v/@drozmotix/iobroker.repetier-server.svg)](https://www.npmjs.com/package/iobroker.repetier-server)
@@ -14,28 +15,33 @@
 
 Adapter to communicate with your Repetier Server! Supported features:
 
-- Connection by websocket which ensures real-time updates of values (where supported by Repetier-Server, like bed/extruder temperatures)
-- All other values are updated every 5 seconds
-- Capability to send custom g-code commands by ioBroker state or predefined g-code commands defined in admin instance (not yet implemented)
+-   Connection by websocket which ensures real-time updates of values (where supported by Repetier-Server, like bed/extruder temperatures)
+-   All other values are updated every 5 seconds
+-   Capability to send custom g-code commands by ioBroker state or predefined g-code commands defined in admin instance (not yet implemented)
 
 ### Getting started
 
 You are almost done, only a few steps left:
+
 1. Install adapter by npm (preferred) or git, (request to add to ioBroker repository in progress)
 2. Add an instance
-3. Provide you IP-ares, port and your API-Token (token only needed if authorisation is activated on Repetier Server). 
+3. Provide you IP-ares, port and your API-Token (token only needed if authorisation is activated on Repetier Server).
 4. Adapter will start and create states with all values provided by Webscocket-API
 5. If no states are created, please check your log if any error occurs
 
 ## Changelog
+
 <!--
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
+
 ### 0.1.0 (2023-02-07) - Repetier-Server Adapter First Beta release for Public testing
-* (DutchmanNL) initial release
+
+-   (DutchmanNL) initial release
 
 ## License
+
 MIT License
 
 Copyright (c) 2023 DutchmanNL <oss@DrozmotiX.eu>
