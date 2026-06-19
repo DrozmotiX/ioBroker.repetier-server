@@ -33,7 +33,7 @@
     "@emotion/react": "^11.10.5",
     "@emotion/styled": "^11.10.5",
     "@iobroker/adapter-dev": "^1.2.0",
-    "@iobroker/dev-server": "^0.6.0",
+    "@iobroker/dev-server": "^0.8.0",
     "@iobroker/testing": "^4.1.0",
     "@mui/icons-material": "^5.14.1",
     "@mui/material": "^5.11.7",
