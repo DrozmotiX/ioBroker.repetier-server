@@ -125,7 +125,7 @@ class RepetierServer extends utils.Adapter {
 
 			// Handle errors on socket connection
 			ws.on('error', (error) => {
-				this.log.error(error);
+				this.log.error(error.message);
 			});
 
 			// Handle messages received from socket connection
@@ -183,7 +183,7 @@ class RepetierServer extends utils.Adapter {
 			}
 
 			callback();
-		} catch (e) {
+		} catch {
 			callback();
 		}
 	}
