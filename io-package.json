@@ -1,6 +1,6 @@
 {
   "common": {
-    "name": "@drozmotix/iobroker.repetier-server",
+    "name": "repetier-server",
     "version": "0.1.0",
     "news": {
       "0.1.0": {
@@ -15,18 +15,6 @@
         "pl": "pierwsze wydanie",
         "uk": "початковий реліз",
         "zh-cn": "初步释放"
-      },
-      "0.0.1": {
-        "en": "initial release",
-        "de": "Erstveröffentlichung",
-        "ru": "Начальная версия",
-        "pt": "lançamento inicial",
-        "nl": "Eerste uitgave",
-        "fr": "Première version",
-        "it": "Versione iniziale",
-        "es": "Versión inicial",
-        "pl": "Pierwsze wydanie",
-        "zh-cn": "首次出版"
       }
     },
     "title": "Repetier Server",
@@ -58,12 +46,16 @@
       "DutchmanNL <oss@DrozmotiX.eu>"
     ],
     "keywords": [
-      "ioBroker",
-      "template",
-      "Smart Home",
-      "home automation"
+      "repetier",
+      "repetier-server",
+      "3d-printer",
+      "3d-printing"
     ],
-    "license": "MIT",
+    "licenseInformation": {
+      "license": "MIT",
+      "type": "free"
+    },
+    "tier": 3,
     "platform": "Javascript/Node.js",
     "main": "main.js",
     "icon": "repetier-server.png",
@@ -83,15 +75,18 @@
     "eraseOnUpload": true,
     "dependencies": [
       {
-        "js-controller": ">=3.3.22"
+        "js-controller": ">=5.0.19"
       }
     ],
     "globalDependencies": [
       {
-        "admin": ">=5.0.0"
+        "admin": ">=6.0.0"
       }
     ]
   },
+  "protectedNative": [
+    "token"
+  ],
   "native": {
     "ip": "192.168.1.50",
     "port": 3344,
