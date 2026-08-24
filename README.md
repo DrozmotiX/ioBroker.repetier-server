@@ -33,6 +33,7 @@ You are almost done, only a few steps left:
 	### __WORK IN PROGRESS__
 -->
 ### __WORK IN PROGRESS__
+* (DutchmanNL) Dependencies updated to current versions
 * (DutchmanNL) Maintenance: raise Node.js to 22, modernise CI and release tooling, update dependencies, resolve repository checker findings
 
 ### 0.1.0 (2023-02-07) - Repetier-Server Adapter First Beta release for Public testing
