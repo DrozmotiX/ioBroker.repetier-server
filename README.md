@@ -1,8 +1,8 @@
 ![Logo](admin/repetier-server.png)
 # ioBroker.repetier-server
 
-[![NPM version](https://img.shields.io/npm/v/@drozmotix/iobroker.repetier-server.svg)](https://www.npmjs.com/package/iobroker.repetier-server)
-[![Downloads](https://img.shields.io/npm/dm/@drozmotix/iobroker.repetier-server.svg)](https://www.npmjs.com/package/iobroker.repetier-server)
+[![NPM version](https://img.shields.io/npm/v/iobroker.repetier-server.svg)](https://www.npmjs.com/package/iobroker.repetier-server)
+[![Downloads](https://img.shields.io/npm/dm/iobroker.repetier-server.svg)](https://www.npmjs.com/package/iobroker.repetier-server)
 ![Number of Installations](https://iobroker.live/badges/repetier-server-installed.svg)
 ![Current version in stable repository](https://iobroker.live/badges/repetier-server-stable.svg)
 
@@ -30,8 +30,11 @@ You are almost done, only a few steps left:
 ## Changelog
 <!--
 	Placeholder for the next version (at the beginning of the line):
-	### **WORK IN PROGRESS**
+	### __WORK IN PROGRESS__
 -->
+### __WORK IN PROGRESS__
+* (DutchmanNL) Maintenance: raise Node.js to 22, modernise CI and release tooling, update dependencies, resolve repository checker findings
+
 ### 0.1.0 (2023-02-07) - Repetier-Server Adapter First Beta release for Public testing
 * (DutchmanNL) initial release
 
