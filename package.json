@@ -37,7 +37,7 @@
     "@iobroker/dev-server": "^0.6.0",
     "@iobroker/testing": "^5.2.2",
     "@mui/icons-material": "^5.18.0",
-    "@mui/material": "^5.11.7",
+    "@mui/material": "^5.18.0",
     "@mui/styles": "^5.11.7",
     "@tsconfig/node22": "^22.0.2",
     "@types/chai": "^4.3.4",
